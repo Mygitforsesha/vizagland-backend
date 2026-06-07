@@ -1,0 +1,75 @@
+<?php
+
+namespace App\Modules\User\Concerns;
+
+use App\Modules\User\Enums\UserRole;
+use Illuminate\Database\Eloquent\Builder;
+
+trait HasRoles
+{
+    public function hasRole(UserRole|string $role): bool
+    {
+        $roleValue = $role instanceof UserRole ? $role->value : $role;
+
+        return $this->role->value === $roleValue;
+    }
+
+    /**
+     * @param  list<UserRole|string>  $roles
+     */
+    public function hasAnyRole(array $roles): bool
+    {
+        foreach ($roles as $role) {
+            if ($this->hasRole($role)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public function isSuperAdmin(): bool
+    {
+        return $this->hasRole(UserRole::SuperAdmin);
+    }
+
+    public function isAdmin(): bool
+    {
+        return $this->hasRole(UserRole::Admin);
+    }
+
+    public function isEmployee(): bool
+    {
+        return $this->hasRole(UserRole::Employee);
+    }
+
+    public function isAgent(): bool
+    {
+        return $this->hasRole(UserRole::Agent);
+    }
+
+    public function isActive(): bool
+    {
+        return (bool) $this->is_active;
+    }
+
+    /**
+     * @param  Builder<static>  $query
+     * @return Builder<static>
+     */
+    public function scopeActive(Builder $query): Builder
+    {
+        return $query->where('is_active', true);
+    }
+
+    /**
+     * @param  Builder<static>  $query
+     * @return Builder<static>
+     */
+    public function scopeWithRole(Builder $query, UserRole|string $role): Builder
+    {
+        $roleValue = $role instanceof UserRole ? $role->value : $role;
+
+        return $query->where('role', $roleValue);
+    }
+}
