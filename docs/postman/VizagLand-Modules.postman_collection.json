@@ -1,0 +1,406 @@
+{
+  "info": {
+    "name": "VizagLand - Modules 1-8",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:8000/api" },
+    { "key": "token", "value": "" },
+    { "key": "property_id", "value": "1" },
+    { "key": "lead_id", "value": "1" },
+    { "key": "follow_up_id", "value": "1" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login Admin",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@vizagland.com\",\n  \"password\": \"password\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{base_url}}/auth/login"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Module 1 - Property Media",
+      "item": [
+        {
+          "name": "Upload Image",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [{ "key": "property_image", "type": "file", "src": "" }]
+            },
+            "url": "{{base_url}}/properties/{{property_id}}/images"
+          }
+        },
+        {
+          "name": "Delete Image",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": "{{base_url}}/property-images/1"
+          }
+        },
+        {
+          "name": "Upload Document",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [{ "key": "property_document", "type": "file", "src": "" }]
+            },
+            "url": "{{base_url}}/properties/{{property_id}}/documents"
+          }
+        },
+        {
+          "name": "Delete Document",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": "{{base_url}}/property-documents/1"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Module 2 - Property Review",
+      "item": [
+        {
+          "name": "List Reviews",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": "{{base_url}}/property-reviews?per_page=20"
+          }
+        },
+        {
+          "name": "Approve Property",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"review_remarks\": \"Approved for public listing.\"\n}"
+            },
+            "url": "{{base_url}}/properties/{{property_id}}/approve"
+          }
+        },
+        {
+          "name": "Reject Property",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"review_remarks\": \"Incomplete documentation.\"\n}"
+            },
+            "url": "{{base_url}}/properties/{{property_id}}/reject"
+          }
+        },
+        {
+          "name": "Request Changes",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"review_remarks\": \"Please update price and images.\"\n}"
+            },
+            "url": "{{base_url}}/properties/{{property_id}}/request-changes"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Module 3 - Employee Dashboard",
+      "item": [
+        {
+          "name": "Employee Dashboard",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": "{{base_url}}/employee/dashboard"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Module 4 - Agent Dashboard",
+      "item": [
+        {
+          "name": "Agent Dashboard",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": "{{base_url}}/agent/dashboard"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Module 5 - Admin Dashboard",
+      "item": [
+        {
+          "name": "Admin Dashboard",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": "{{base_url}}/admin/dashboard"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Module 6 - Lead",
+      "item": [
+        {
+          "name": "Public Create Lead",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"lead_name\": \"John Doe\",\n  \"lead_email\": \"john@example.com\",\n  \"lead_phone\": \"9876543210\",\n  \"lead_message\": \"Interested in 3BHK\",\n  \"lead_property_id\": 1\n}"
+            },
+            "url": "{{base_url}}/public/leads"
+          }
+        },
+        {
+          "name": "Agent Create Lead",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"lead_name\": \"Agent Lead\",\n  \"lead_phone\": \"9876543211\",\n  \"lead_message\": \"Walk-in customer\"\n}"
+            },
+            "url": "{{base_url}}/agent/leads"
+          }
+        },
+        {
+          "name": "List Leads",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": "{{base_url}}/leads?lead_status=open"
+          }
+        },
+        {
+          "name": "Show Lead",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": "{{base_url}}/leads/{{lead_id}}"
+          }
+        },
+        {
+          "name": "Assign Lead",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"lead_assigned_to\": 2,\n  \"lead_assignment_remarks\": \"Handle this lead today.\"\n}"
+            },
+            "url": "{{base_url}}/leads/{{lead_id}}/assign"
+          }
+        },
+        {
+          "name": "Update Lead",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"lead_status\": \"in_progress\"\n}"
+            },
+            "url": "{{base_url}}/leads/{{lead_id}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Module 7 - FollowUp",
+      "item": [
+        {
+          "name": "Create FollowUp",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"follow_up_type\": \"call\",\n  \"follow_up_notes\": \"Call back at 4 PM\",\n  \"follow_up_scheduled_at\": \"2026-06-08T16:00:00\",\n  \"follow_up_lead_id\": 1,\n  \"follow_up_assigned_to\": 2\n}"
+            },
+            "url": "{{base_url}}/follow-ups"
+          }
+        },
+        {
+          "name": "Update FollowUp",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"follow_up_status\": \"completed\"\n}"
+            },
+            "url": "{{base_url}}/follow-ups/{{follow_up_id}}"
+          }
+        },
+        {
+          "name": "List FollowUps",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": "{{base_url}}/follow-ups?follow_up_status=pending"
+          }
+        },
+        {
+          "name": "Property FollowUps",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": "{{base_url}}/properties/{{property_id}}/follow-ups"
+          }
+        },
+        {
+          "name": "Lead FollowUps",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": "{{base_url}}/leads/{{lead_id}}/follow-ups"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Module 8 - Public Website",
+      "item": [
+        {
+          "name": "List Public Properties",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": "{{base_url}}/public/properties?city=Visakhapatnam&property_type=apartment&price_min=1000000&price_max=5000000&bedrooms=3&ownership_type=freehold"
+          }
+        },
+        {
+          "name": "Public Property Details",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": "{{base_url}}/public/properties/{{property_id}}"
+          }
+        },
+        {
+          "name": "Featured Properties",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": "{{base_url}}/public/featured-properties"
+          }
+        },
+        {
+          "name": "Support Request",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"support_request_name\": \"Visitor\",\n  \"support_request_email\": \"visitor@example.com\",\n  \"support_request_phone\": \"9876543210\",\n  \"support_request_message\": \"Need help finding a plot.\"\n}"
+            },
+            "url": "{{base_url}}/public/support"
+          }
+        }
+      ]
+    }
+  ]
+}

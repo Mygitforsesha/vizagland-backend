@@ -10,6 +10,23 @@ use Illuminate\Database\Eloquent\Builder;
 
 class PropertyRepository
 {
+    public function findById(int $propertyId): ?Property
+    {
+        return Property::query()
+            ->where('property_id', $propertyId)
+            ->first();
+    }
+
+    /**
+     * @param  array<string, mixed>  $attributes
+     */
+    public function update(Property $property, array $attributes): Property
+    {
+        $property->update($attributes);
+
+        return $property->fresh();
+    }
+
     public function findByIdWithDetails(int $propertyId): ?Property
     {
         return Property::query()

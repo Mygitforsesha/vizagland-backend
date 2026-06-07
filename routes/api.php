@@ -4,6 +4,10 @@ use App\Modules\Auth\Http\Controllers\AuthController;
 use Illuminate\Support\Facades\Route;
 
 require __DIR__.'/../app/Modules/Property/Routes/api.php';
+require __DIR__.'/../app/Modules/Dashboard/Routes/api.php';
+require __DIR__.'/../app/Modules/Lead/Routes/api.php';
+require __DIR__.'/../app/Modules/FollowUp/Routes/api.php';
+require __DIR__.'/../app/Modules/PublicSite/Routes/api.php';
 
 Route::prefix('auth')->group(function (): void {
     Route::post('login', [AuthController::class, 'login']);

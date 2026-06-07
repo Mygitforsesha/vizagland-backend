@@ -21,6 +21,8 @@ return new class extends Migration
             $table->decimal('property_price', 15, 2)->nullable();
             $table->boolean('property_negotiable')->default(false);
             $table->decimal('property_area_sqft', 10, 2)->nullable();
+            $table->decimal('property_area', 12, 2)->nullable();
+            $table->string('property_area_unit')->nullable();
             $table->unsignedTinyInteger('property_bedrooms')->nullable();
             $table->unsignedTinyInteger('property_bathrooms')->nullable();
             $table->unsignedTinyInteger('property_parking')->nullable();
@@ -29,6 +31,10 @@ return new class extends Migration
             $table->string('property_city')->nullable();
             $table->string('property_state')->nullable();
             $table->string('property_pincode', 10)->nullable();
+            $table->string('property_lp_number')->nullable();
+            $table->unsignedSmallInteger('property_year')->nullable();
+            $table->string('property_plot_number')->nullable();
+            $table->string('property_ownership_type')->nullable();
             $table->decimal('property_latitude', 10, 7)->nullable();
             $table->decimal('property_longitude', 10, 7)->nullable();
             $table->string('property_contact_name')->nullable();

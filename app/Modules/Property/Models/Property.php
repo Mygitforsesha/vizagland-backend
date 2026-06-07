@@ -2,9 +2,11 @@
 
 namespace App\Modules\Property\Models;
 
+use App\Modules\Property\Enums\PropertyAreaUnit;
 use App\Modules\Property\Enums\PropertyContactType;
 use App\Modules\Property\Enums\PropertyCreatedByType;
 use App\Modules\Property\Enums\PropertyListingType;
+use App\Modules\Property\Enums\PropertyOwnershipType;
 use App\Modules\Property\Enums\PropertySource;
 use App\Modules\Property\Enums\PropertyStatus;
 use App\Modules\Property\Enums\PropertyType;
@@ -31,7 +33,13 @@ class Property extends Model
         'property_price',
         'property_negotiable',
         'property_area_sqft',
+        'property_area',
+        'property_area_unit',
         'property_bedrooms',
+        'property_lp_number',
+        'property_year',
+        'property_plot_number',
+        'property_ownership_type',
         'property_bathrooms',
         'property_parking',
         'property_address',
@@ -66,7 +74,11 @@ class Property extends Model
             'property_price' => 'decimal:2',
             'property_negotiable' => 'boolean',
             'property_area_sqft' => 'decimal:2',
+            'property_area' => 'decimal:2',
+            'property_area_unit' => PropertyAreaUnit::class,
             'property_bedrooms' => 'integer',
+            'property_year' => 'integer',
+            'property_ownership_type' => PropertyOwnershipType::class,
             'property_bathrooms' => 'integer',
             'property_parking' => 'integer',
             'property_latitude' => 'decimal:7',

@@ -4,20 +4,18 @@ namespace App\Modules\Lead\Enums;
 
 enum LeadStatus: string
 {
-    case New = 'new';
-    case Contacted = 'contacted';
-    case Qualified = 'qualified';
+    case Open = 'open';
+    case InProgress = 'in_progress';
     case Converted = 'converted';
-    case Lost = 'lost';
+    case Closed = 'closed';
 
     public function label(): string
     {
         return match ($this) {
-            self::New => 'New',
-            self::Contacted => 'Contacted',
-            self::Qualified => 'Qualified',
+            self::Open => 'Open',
+            self::InProgress => 'In Progress',
             self::Converted => 'Converted',
-            self::Lost => 'Lost',
+            self::Closed => 'Closed',
         };
     }
 

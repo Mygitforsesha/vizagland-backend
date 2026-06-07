@@ -5,19 +5,19 @@ namespace App\Modules\FollowUp\Enums;
 enum FollowUpType: string
 {
     case Call = 'call';
-    case Email = 'email';
     case Visit = 'visit';
-    case Meeting = 'meeting';
-    case Note = 'note';
+    case Whatsapp = 'whatsapp';
+    case Email = 'email';
+    case Other = 'other';
 
     public function label(): string
     {
         return match ($this) {
             self::Call => 'Call',
+            self::Visit => 'Visit',
+            self::Whatsapp => 'WhatsApp',
             self::Email => 'Email',
-            self::Visit => 'Site Visit',
-            self::Meeting => 'Meeting',
-            self::Note => 'Note',
+            self::Other => 'Other',
         };
     }
 

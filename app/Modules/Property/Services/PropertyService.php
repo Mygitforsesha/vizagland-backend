@@ -42,6 +42,26 @@ class PropertyService
     }
 
     /**
+     * @param  array<string, mixed>  $attributes
+     */
+    public function update(int $propertyId, array $attributes): Property
+    {
+        return DB::transaction(function () use ($propertyId, $attributes) {
+            $property = $this->propertyRepository->findById($propertyId);
+
+            if ($property === null) {
+                throw (new ModelNotFoundException)->setModel(Property::class, [$propertyId]);
+            }
+
+            if ($attributes === []) {
+                return $property;
+            }
+
+            return $this->propertyRepository->update($property, $attributes);
+        });
+    }
+
+    /**
      * @param  array<string, mixed>  $data
      * @param  list<UploadedFile>  $images
      * @param  list<UploadedFile>  $documents

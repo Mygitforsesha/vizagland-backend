@@ -7,9 +7,11 @@ use App\Http\Controllers\Controller;
 use App\Modules\Property\Requests\CreatePropertyRequest;
 use App\Modules\Property\Requests\CreatePublicPropertyRequest;
 use App\Modules\Property\Requests\ListPropertiesRequest;
+use App\Modules\Property\Requests\UpdatePropertyRequest;
 use App\Modules\Property\Resources\PropertyCreatedResource;
 use App\Modules\Property\Resources\PropertyDetailsResource;
 use App\Modules\Property\Resources\PropertyListResource;
+use App\Modules\Property\Resources\PropertyResource;
 use App\Modules\Property\Services\PropertyService;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\JsonResponse;
@@ -46,6 +48,33 @@ class PropertyController extends Controller
             return $this->errorResponse(
                 message: 'Property not found.',
                 statusCode: HttpStatus::NOT_FOUND,
+            );
+        }
+    }
+
+    public function update(UpdatePropertyRequest $request, int $property_id): JsonResponse
+    {
+        try {
+            $property = $this->propertyService->update(
+                propertyId: $property_id,
+                attributes: $request->updateAttributes(),
+            );
+
+            return $this->successResponse(
+                data: new PropertyResource($property),
+                message: 'Property updated successfully.',
+            );
+        } catch (ModelNotFoundException) {
+            return $this->errorResponse(
+                message: 'Property not found.',
+                statusCode: HttpStatus::NOT_FOUND,
+            );
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return $this->errorResponse(
+                message: 'Failed to update property. Please try again.',
+                statusCode: HttpStatus::INTERNAL_SERVER_ERROR,
             );
         }
     }

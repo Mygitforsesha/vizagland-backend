@@ -1,0 +1,111 @@
+<?php
+
+namespace App\Modules\Lead\Services;
+
+use App\Modules\Lead\Enums\LeadSource;
+use App\Modules\Lead\Enums\LeadStatus;
+use App\Modules\Lead\Models\Lead;
+use App\Modules\Lead\Repositories\LeadRepository;
+use App\Modules\User\Models\User;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Support\Facades\DB;
+
+class LeadService
+{
+    public function __construct(
+        private readonly LeadRepository $leadRepository,
+    ) {}
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    public function createPublic(array $data): Lead
+    {
+        return $this->leadRepository->create([
+            ...$data,
+            'lead_source' => LeadSource::Public,
+            'lead_status' => LeadStatus::Open,
+            'lead_created_by' => null,
+            'lead_assigned_to' => null,
+        ]);
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    public function createAuthenticated(array $data, User $user, LeadSource $source): Lead
+    {
+        return $this->leadRepository->create([
+            ...$data,
+            'lead_source' => $source,
+            'lead_status' => LeadStatus::Open,
+            'lead_created_by' => $user->id,
+            'lead_assigned_to' => null,
+        ]);
+    }
+
+    /**
+     * @param  array<string, mixed>  $filters
+     */
+    public function list(array $filters, int $perPage, User $user): LengthAwarePaginator
+    {
+        $scopedUser = ($user->isAdmin() || $user->isSuperAdmin()) ? null : $user;
+
+        return $this->leadRepository->paginate($filters, $perPage, $scopedUser);
+    }
+
+    public function show(int $leadId): Lead
+    {
+        $lead = $this->leadRepository->findById($leadId);
+
+        if ($lead === null) {
+            throw (new ModelNotFoundException)->setModel(Lead::class, [$leadId]);
+        }
+
+        return $lead;
+    }
+
+    /**
+     * @param  array<string, mixed>  $attributes
+     */
+    public function update(int $leadId, array $attributes): Lead
+    {
+        return DB::transaction(function () use ($leadId, $attributes) {
+            $lead = $this->leadRepository->findById($leadId);
+
+            if ($lead === null) {
+                throw (new ModelNotFoundException)->setModel(Lead::class, [$leadId]);
+            }
+
+            if ($attributes === []) {
+                return $lead;
+            }
+
+            return $this->leadRepository->update($lead, $attributes);
+        });
+    }
+
+    public function assign(int $leadId, int $assigneeId, User $assignedBy, ?string $remarks): Lead
+    {
+        return DB::transaction(function () use ($leadId, $assigneeId, $assignedBy, $remarks) {
+            $lead = $this->leadRepository->findById($leadId);
+
+            if ($lead === null) {
+                throw (new ModelNotFoundException)->setModel(Lead::class, [$leadId]);
+            }
+
+            $this->leadRepository->createAssignment([
+                'lead_id' => $leadId,
+                'lead_assigned_to' => $assigneeId,
+                'lead_assigned_by' => $assignedBy->id,
+                'lead_assignment_remarks' => $remarks,
+            ]);
+
+            return $this->leadRepository->update($lead, [
+                'lead_assigned_to' => $assigneeId,
+                'lead_status' => LeadStatus::InProgress,
+            ]);
+        });
+    }
+}
