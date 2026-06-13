@@ -12,13 +12,14 @@ class LoginRequest extends FormRequest
     }
 
     /**
-     * @return array<string, list<string>>
+     * @return array<string, mixed>
      */
     public function rules(): array
     {
         return [
-            'email' => ['required', 'string', 'email'],
-            'password' => ['required', 'string'],
+            'user_email' => ['required_without:user_phone', 'nullable', 'string', 'email'],
+            'user_phone' => ['required_without:user_email', 'nullable', 'string', 'regex:/^[6-9]\d{9}$/'],
+            'user_password' => ['required', 'string'],
         ];
     }
 
@@ -28,9 +29,11 @@ class LoginRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'email.required' => 'Email address is required.',
-            'email.email' => 'Please provide a valid email address.',
-            'password.required' => 'Password is required.',
+            'user_email.required_without' => 'Email or phone number is required.',
+            'user_phone.required_without' => 'Email or phone number is required.',
+            'user_email.email' => 'Please provide a valid email address.',
+            'user_phone.regex' => 'Please provide a valid 10-digit mobile number.',
+            'user_password.required' => 'Password is required.',
         ];
     }
 }

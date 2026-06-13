@@ -12,6 +12,7 @@ use App\Modules\FollowUp\Resources\FollowUpResource;
 use App\Modules\FollowUp\Services\FollowUpService;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Throwable;
 
 class FollowUpController extends Controller
@@ -46,7 +47,11 @@ class FollowUpController extends Controller
     public function update(UpdateFollowUpRequest $request, int $follow_up_id): JsonResponse
     {
         try {
-            $followUp = $this->followUpService->update($follow_up_id, $request->updateAttributes());
+            $followUp = $this->followUpService->update(
+                $follow_up_id,
+                $request->updateAttributes(),
+                $request->user(),
+            );
 
             return $this->successResponse(
                 data: new FollowUpResource($followUp->load(['property', 'lead', 'createdBy', 'assignedTo'])),
@@ -72,11 +77,28 @@ class FollowUpController extends Controller
         $followUps = $this->followUpService->list(
             filters: $request->filters(),
             perPage: $request->perPage(),
+            user: $request->user(),
         );
 
         return $this->successResponse(
             data: new FollowUpListResource($followUps),
         );
+    }
+
+    public function show(Request $request, int $follow_up_id): JsonResponse
+    {
+        try {
+            $followUp = $this->followUpService->show($follow_up_id, $request->user());
+
+            return $this->successResponse(
+                data: new FollowUpResource($followUp),
+            );
+        } catch (ModelNotFoundException) {
+            return $this->errorResponse(
+                message: 'Follow-up not found.',
+                statusCode: HttpStatus::NOT_FOUND,
+            );
+        }
     }
 
     public function byProperty(int $property_id): JsonResponse

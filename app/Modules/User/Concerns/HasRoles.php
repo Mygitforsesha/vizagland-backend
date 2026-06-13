@@ -11,7 +11,7 @@ trait HasRoles
     {
         $roleValue = $role instanceof UserRole ? $role->value : $role;
 
-        return $this->role->value === $roleValue;
+        return $this->user_role->value === $roleValue;
     }
 
     /**
@@ -48,9 +48,14 @@ trait HasRoles
         return $this->hasRole(UserRole::Agent);
     }
 
+    public function isMember(): bool
+    {
+        return $this->hasRole(UserRole::Member);
+    }
+
     public function isActive(): bool
     {
-        return (bool) $this->is_active;
+        return (bool) $this->user_is_active;
     }
 
     /**
@@ -59,7 +64,7 @@ trait HasRoles
      */
     public function scopeActive(Builder $query): Builder
     {
-        return $query->where('is_active', true);
+        return $query->where('user_is_active', true);
     }
 
     /**
@@ -70,6 +75,6 @@ trait HasRoles
     {
         $roleValue = $role instanceof UserRole ? $role->value : $role;
 
-        return $query->where('role', $roleValue);
+        return $query->where('user_role', $roleValue);
     }
 }

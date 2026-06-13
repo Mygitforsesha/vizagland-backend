@@ -3,6 +3,7 @@
 namespace App\Modules\FollowUp\Repositories;
 
 use App\Modules\FollowUp\Models\FollowUp;
+use App\Modules\User\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -12,11 +13,15 @@ class FollowUpRepository
     /**
      * @param  array<string, mixed>  $filters
      */
-    public function paginate(array $filters, int $perPage): LengthAwarePaginator
+    public function paginate(array $filters, int $perPage, ?User $scopedUser = null): LengthAwarePaginator
     {
         $query = FollowUp::query()
             ->with(['property', 'lead', 'createdBy', 'assignedTo'])
             ->orderBy('follow_up_scheduled_at');
+
+        if ($scopedUser !== null) {
+            $this->applyUserScope($query, $scopedUser);
+        }
 
         $this->applyFilters($query, $filters);
 
@@ -50,8 +55,26 @@ class FollowUpRepository
     public function findById(int $followUpId): ?FollowUp
     {
         return FollowUp::query()
+            ->with(['property', 'lead', 'createdBy', 'assignedTo'])
             ->where('follow_up_id', $followUpId)
             ->first();
+    }
+
+    public function userCanAccess(FollowUp $followUp, User $user): bool
+    {
+        if ($user->isAdmin() || $user->isSuperAdmin()) {
+            return true;
+        }
+
+        if ($user->isEmployee()) {
+            return $followUp->follow_up_assigned_to === $user->user_id;
+        }
+
+        if ($user->isAgent()) {
+            return $followUp->follow_up_created_by === $user->user_id;
+        }
+
+        return false;
     }
 
     /**
@@ -93,6 +116,22 @@ class FollowUpRepository
 
         if (! empty($filters['follow_up_lead_id'])) {
             $query->where('follow_up_lead_id', $filters['follow_up_lead_id']);
+        }
+    }
+
+    /**
+     * @param  Builder<FollowUp>  $query
+     */
+    private function applyUserScope(Builder $query, User $user): void
+    {
+        if ($user->isEmployee()) {
+            $query->where('follow_up_assigned_to', $user->user_id);
+
+            return;
+        }
+
+        if ($user->isAgent()) {
+            $query->where('follow_up_created_by', $user->user_id);
         }
     }
 }

@@ -17,12 +17,12 @@ class PropertyCreatorResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id' => $this->id,
-            'name' => $this->name,
-            'email' => $this->email,
-            'phone' => $this->phone,
-            'role' => $this->role->value,
-            'role_label' => $this->role->label(),
+            'user_id' => $this->user_id,
+            'user_full_name' => $this->user_full_name,
+            'user_email' => $this->user_email,
+            'user_phone' => $this->user_phone,
+            'user_role' => $this->user_role->value,
+            'user_role_label' => $this->user_role->label(),
         ];
     }
 }

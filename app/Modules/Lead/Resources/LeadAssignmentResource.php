@@ -23,12 +23,12 @@ class LeadAssignmentResource extends JsonResource
             'lead_assigned_by' => $this->lead_assigned_by,
             'lead_assignment_remarks' => $this->lead_assignment_remarks,
             'assigned_to' => $this->whenLoaded('assignedTo', fn () => [
-                'user_id' => $this->assignedTo?->id,
-                'user_name' => $this->assignedTo?->name,
+                'user_id' => $this->assignedTo?->user_id,
+                'user_name' => $this->assignedTo?->user_full_name,
             ]),
             'assigned_by' => $this->whenLoaded('assignedBy', fn () => [
-                'user_id' => $this->assignedBy?->id,
-                'user_name' => $this->assignedBy?->name,
+                'user_id' => $this->assignedBy?->user_id,
+                'user_name' => $this->assignedBy?->user_full_name,
             ]),
             'created_at' => $this->created_at?->toIso8601String(),
         ];

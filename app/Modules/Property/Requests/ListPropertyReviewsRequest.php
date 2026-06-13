@@ -20,8 +20,8 @@ class ListPropertyReviewsRequest extends FormRequest
     {
         return [
             'property_id' => ['nullable', 'integer', 'min:1'],
-            'review_status' => ['nullable', Rule::enum(ReviewStatus::class)],
-            'reviewed_by' => ['nullable', 'integer', 'min:1'],
+            'property_review_status' => ['nullable', Rule::enum(ReviewStatus::class)],
+            'property_review_reviewed_by' => ['nullable', 'integer', 'min:1'],
             'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
             'page' => ['nullable', 'integer', 'min:1'],
         ];
@@ -32,7 +32,7 @@ class ListPropertyReviewsRequest extends FormRequest
      */
     public function filters(): array
     {
-        return $this->only(['property_id', 'review_status', 'reviewed_by']);
+        return $this->only(['property_id', 'property_review_status', 'property_review_reviewed_by']);
     }
 
     public function perPage(): int

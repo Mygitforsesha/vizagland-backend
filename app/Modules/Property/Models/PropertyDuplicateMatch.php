@@ -18,15 +18,15 @@ class PropertyDuplicateMatch extends Model
     protected $fillable = [
         'property_id',
         'matched_property_id',
-        'match_percentage',
-        'match_status',
+        'property_duplicate_match_percentage',
+        'property_duplicate_match_status',
     ];
 
     protected function casts(): array
     {
         return [
-            'match_percentage' => 'decimal:2',
-            'match_status' => DuplicateMatchStatus::class,
+            'property_duplicate_match_percentage' => 'decimal:2',
+            'property_duplicate_match_status' => DuplicateMatchStatus::class,
         ];
     }
 

@@ -34,12 +34,12 @@ class LeadResource extends JsonResource
                 'property_title' => $this->property?->property_title,
             ]),
             'created_by' => $this->whenLoaded('createdBy', fn () => [
-                'user_id' => $this->createdBy?->id,
-                'user_name' => $this->createdBy?->name,
+                'user_id' => $this->createdBy?->user_id,
+                'user_name' => $this->createdBy?->user_full_name,
             ]),
             'assigned_to' => $this->whenLoaded('assignedTo', fn () => [
-                'user_id' => $this->assignedTo?->id,
-                'user_name' => $this->assignedTo?->name,
+                'user_id' => $this->assignedTo?->user_id,
+                'user_name' => $this->assignedTo?->user_full_name,
             ]),
             'assignments' => LeadAssignmentResource::collection($this->whenLoaded('assignments')),
             'created_at' => $this->created_at?->toIso8601String(),

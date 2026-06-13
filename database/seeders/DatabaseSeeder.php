@@ -17,12 +17,12 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         User::query()->updateOrCreate(
-            ['email' => 'admin@vizagland.com'],
+            ['user_email' => 'admin@vizagland.com'],
             [
-                'name' => 'Super Admin',
-                'password' => 'Password@123',
-                'role' => UserRole::SuperAdmin,
-                'is_active' => true,
+                'user_full_name' => 'Super Admin',
+                'user_password' => 'Password@123',
+                'user_role' => UserRole::SuperAdmin,
+                'user_is_active' => true,
             ],
         );
     }

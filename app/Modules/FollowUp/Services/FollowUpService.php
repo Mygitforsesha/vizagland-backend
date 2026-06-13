@@ -26,7 +26,7 @@ class FollowUpService
             return $this->followUpRepository->create([
                 ...$data,
                 'follow_up_status' => FollowUpStatus::Pending,
-                'follow_up_created_by' => $user->id,
+                'follow_up_created_by' => $user->user_id,
             ]);
         });
     }
@@ -34,12 +34,12 @@ class FollowUpService
     /**
      * @param  array<string, mixed>  $attributes
      */
-    public function update(int $followUpId, array $attributes): FollowUp
+    public function update(int $followUpId, array $attributes, User $user): FollowUp
     {
-        return DB::transaction(function () use ($followUpId, $attributes) {
+        return DB::transaction(function () use ($followUpId, $attributes, $user) {
             $followUp = $this->followUpRepository->findById($followUpId);
 
-            if ($followUp === null) {
+            if ($followUp === null || ! $this->followUpRepository->userCanAccess($followUp, $user)) {
                 throw (new ModelNotFoundException)->setModel(FollowUp::class, [$followUpId]);
             }
 
@@ -66,9 +66,22 @@ class FollowUpService
     /**
      * @param  array<string, mixed>  $filters
      */
-    public function list(array $filters, int $perPage): LengthAwarePaginator
+    public function list(array $filters, int $perPage, User $user): LengthAwarePaginator
     {
-        return $this->followUpRepository->paginate($filters, $perPage);
+        $scopedUser = ($user->isAdmin() || $user->isSuperAdmin()) ? null : $user;
+
+        return $this->followUpRepository->paginate($filters, $perPage, $scopedUser);
+    }
+
+    public function show(int $followUpId, User $user): FollowUp
+    {
+        $followUp = $this->followUpRepository->findById($followUpId);
+
+        if ($followUp === null || ! $this->followUpRepository->userCanAccess($followUp, $user)) {
+            throw (new ModelNotFoundException)->setModel(FollowUp::class, [$followUpId]);
+        }
+
+        return $followUp;
     }
 
     /**

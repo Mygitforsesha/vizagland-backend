@@ -26,36 +26,36 @@ class UserFactory extends Factory
     public function definition(): array
     {
         return [
-            'name' => fake()->name(),
-            'email' => fake()->unique()->safeEmail(),
-            'phone' => fake()->unique()->numerify('##########'),
-            'email_verified_at' => now(),
-            'password' => static::$password ??= Hash::make('password'),
-            'role' => UserRole::Agent,
-            'is_active' => true,
-            'last_login_at' => null,
-            'remember_token' => Str::random(10),
+            'user_full_name' => fake()->name(),
+            'user_email' => fake()->unique()->safeEmail(),
+            'user_phone' => fake()->unique()->numerify('##########'),
+            'user_email_verified_at' => now(),
+            'user_password' => static::$password ??= Hash::make('password'),
+            'user_role' => UserRole::Agent,
+            'user_is_active' => true,
+            'user_last_login_at' => null,
+            'user_remember_token' => Str::random(10),
         ];
     }
 
     public function unverified(): static
     {
         return $this->state(fn (array $attributes) => [
-            'email_verified_at' => null,
+            'user_email_verified_at' => null,
         ]);
     }
 
     public function inactive(): static
     {
         return $this->state(fn (array $attributes) => [
-            'is_active' => false,
+            'user_is_active' => false,
         ]);
     }
 
     public function withRole(UserRole $role): static
     {
         return $this->state(fn (array $attributes) => [
-            'role' => $role,
+            'user_role' => $role,
         ]);
     }
 }

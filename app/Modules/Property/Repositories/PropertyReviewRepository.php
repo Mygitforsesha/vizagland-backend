@@ -16,7 +16,7 @@ class PropertyReviewRepository
     {
         $query = PropertyReview::query()
             ->with(['property', 'reviewer'])
-            ->orderByDesc('reviewed_at');
+            ->orderByDesc('property_review_reviewed_at');
 
         $this->applyFilters($query, $filters);
 
@@ -33,12 +33,12 @@ class PropertyReviewRepository
             $query->where('property_id', $filters['property_id']);
         }
 
-        if (! empty($filters['review_status'])) {
-            $query->where('review_status', $filters['review_status']);
+        if (! empty($filters['property_review_status'])) {
+            $query->where('property_review_status', $filters['property_review_status']);
         }
 
-        if (! empty($filters['reviewed_by'])) {
-            $query->where('reviewed_by', $filters['reviewed_by']);
+        if (! empty($filters['property_review_reviewed_by'])) {
+            $query->where('property_review_reviewed_by', $filters['property_review_reviewed_by']);
         }
     }
 

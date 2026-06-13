@@ -29,11 +29,11 @@ class LeadAssignment extends Model
 
     public function assignedTo(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'lead_assigned_to');
+        return $this->belongsTo(User::class, 'lead_assigned_to', 'user_id');
     }
 
     public function assignedBy(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'lead_assigned_by');
+        return $this->belongsTo(User::class, 'lead_assigned_by', 'user_id');
     }
 }

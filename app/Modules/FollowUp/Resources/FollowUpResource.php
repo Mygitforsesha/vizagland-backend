@@ -38,12 +38,12 @@ class FollowUpResource extends JsonResource
                 'lead_name' => $this->lead?->lead_name,
             ]),
             'created_by' => $this->whenLoaded('createdBy', fn () => [
-                'user_id' => $this->createdBy?->id,
-                'user_name' => $this->createdBy?->name,
+                'user_id' => $this->createdBy?->user_id,
+                'user_name' => $this->createdBy?->user_full_name,
             ]),
             'assigned_to' => $this->whenLoaded('assignedTo', fn () => [
-                'user_id' => $this->assignedTo?->id,
-                'user_name' => $this->assignedTo?->name,
+                'user_id' => $this->assignedTo?->user_id,
+                'user_name' => $this->assignedTo?->user_full_name,
             ]),
             'created_at' => $this->created_at?->toIso8601String(),
             'updated_at' => $this->updated_at?->toIso8601String(),

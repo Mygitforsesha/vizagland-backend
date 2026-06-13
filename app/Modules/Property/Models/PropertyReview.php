@@ -18,23 +18,23 @@ class PropertyReview extends Model
      */
     protected $fillable = [
         'property_id',
-        'reviewed_by',
-        'review_status',
-        'review_comments',
-        'reviewed_at',
+        'property_review_reviewed_by',
+        'property_review_status',
+        'property_review_comments',
+        'property_review_reviewed_at',
     ];
 
     protected function casts(): array
     {
         return [
-            'review_status' => ReviewStatus::class,
-            'reviewed_at' => 'datetime',
+            'property_review_status' => ReviewStatus::class,
+            'property_review_reviewed_at' => 'datetime',
         ];
     }
 
     public function reviewer(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'reviewed_by');
+        return $this->belongsTo(User::class, 'property_review_reviewed_by', 'user_id');
     }
 
     public function property(): BelongsTo

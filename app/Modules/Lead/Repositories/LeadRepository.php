@@ -78,6 +78,23 @@ class LeadRepository
         }
     }
 
+    public function userCanAccess(Lead $lead, User $user): bool
+    {
+        if ($user->isAdmin() || $user->isSuperAdmin()) {
+            return true;
+        }
+
+        if ($user->isEmployee()) {
+            return $lead->lead_assigned_to === $user->user_id;
+        }
+
+        if ($user->isAgent()) {
+            return $lead->lead_created_by === $user->user_id;
+        }
+
+        return false;
+    }
+
     /**
      * @param  Builder<Lead>  $query
      */
@@ -88,13 +105,13 @@ class LeadRepository
         }
 
         if ($user->isEmployee()) {
-            $query->where('lead_assigned_to', $user->id);
+            $query->where('lead_assigned_to', $user->user_id);
 
             return;
         }
 
         if ($user->isAgent()) {
-            $query->where('lead_created_by', $user->id);
+            $query->where('lead_created_by', $user->user_id);
         }
     }
 }

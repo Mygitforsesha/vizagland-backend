@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Modules\Property\Requests\CreatePropertyRequest;
 use App\Modules\Property\Requests\CreatePublicPropertyRequest;
 use App\Modules\Property\Requests\ListPropertiesRequest;
+use App\Modules\Property\Requests\SubmitPropertyForReviewRequest;
 use App\Modules\Property\Requests\UpdatePropertyRequest;
 use App\Modules\Property\Resources\PropertyCreatedResource;
 use App\Modules\Property\Resources\PropertyDetailsResource;
@@ -15,6 +16,7 @@ use App\Modules\Property\Resources\PropertyResource;
 use App\Modules\Property\Services\PropertyService;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\JsonResponse;
+use RuntimeException;
 use Throwable;
 
 class PropertyController extends Controller
@@ -99,6 +101,38 @@ class PropertyController extends Controller
 
             return $this->errorResponse(
                 message: 'Failed to create property. Please try again.',
+                statusCode: HttpStatus::INTERNAL_SERVER_ERROR,
+            );
+        }
+    }
+
+    public function submitForReview(SubmitPropertyForReviewRequest $request, int $property_id): JsonResponse
+    {
+        try {
+            $property = $this->propertyService->submitForReview(
+                propertyId: $property_id,
+                user: $request->user(),
+            );
+
+            return $this->successResponse(
+                data: new PropertyResource($property),
+                message: 'Property submitted for review successfully.',
+            );
+        } catch (ModelNotFoundException) {
+            return $this->errorResponse(
+                message: 'Property not found.',
+                statusCode: HttpStatus::NOT_FOUND,
+            );
+        } catch (RuntimeException $exception) {
+            return $this->errorResponse(
+                message: $exception->getMessage(),
+                statusCode: HttpStatus::UNPROCESSABLE_ENTITY,
+            );
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return $this->errorResponse(
+                message: 'Failed to submit property for review. Please try again.',
                 statusCode: HttpStatus::INTERNAL_SERVER_ERROR,
             );
         }

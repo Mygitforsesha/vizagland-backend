@@ -10,6 +10,7 @@ require __DIR__.'/../app/Modules/FollowUp/Routes/api.php';
 require __DIR__.'/../app/Modules/PublicSite/Routes/api.php';
 
 Route::prefix('auth')->group(function (): void {
+    Route::post('register', [AuthController::class, 'register']);
     Route::post('login', [AuthController::class, 'login']);
 
     Route::middleware('auth:sanctum')->group(function (): void {

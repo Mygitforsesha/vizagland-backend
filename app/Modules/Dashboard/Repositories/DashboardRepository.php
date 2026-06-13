@@ -39,8 +39,8 @@ class DashboardRepository
     public function countUsersByRole(UserRole $role): int
     {
         return User::query()
-            ->where('role', $role)
-            ->where('is_active', true)
+            ->where('user_role', $role)
+            ->where('user_is_active', true)
             ->count();
     }
 

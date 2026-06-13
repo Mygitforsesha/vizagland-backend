@@ -78,15 +78,15 @@ class PropertyReviewService
                 throw (new ModelNotFoundException)->setModel(Property::class, [$propertyId]);
             }
 
-            if (! in_array($property->property_status, [PropertyStatus::PendingReview, PropertyStatus::Draft], true)) {
-                throw new RuntimeException('Property is not eligible for review.');
+            if ($property->property_status !== PropertyStatus::PendingReview) {
+                throw new RuntimeException('Property is not pending review.');
             }
 
             $now = now();
 
             $propertyAttributes = [
                 'property_status' => $propertyStatus,
-                'property_reviewed_by' => $reviewer->id,
+                'property_reviewed_by' => $reviewer->user_id,
             ];
 
             if ($setPublishedAt) {
@@ -97,10 +97,10 @@ class PropertyReviewService
 
             return $this->propertyReviewRepository->create([
                 'property_id' => $propertyId,
-                'reviewed_by' => $reviewer->id,
-                'review_status' => $reviewStatus,
-                'review_comments' => $remarks,
-                'reviewed_at' => $now,
+                'property_review_reviewed_by' => $reviewer->user_id,
+                'property_review_status' => $reviewStatus,
+                'property_review_comments' => $remarks,
+                'property_review_reviewed_at' => $now,
             ]);
         });
     }

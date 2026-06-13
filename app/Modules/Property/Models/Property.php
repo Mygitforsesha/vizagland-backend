@@ -109,16 +109,16 @@ class Property extends Model
 
     public function createdBy(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'property_created_by');
+        return $this->belongsTo(User::class, 'property_created_by', 'user_id');
     }
 
     public function reviewedBy(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'property_reviewed_by');
+        return $this->belongsTo(User::class, 'property_reviewed_by', 'user_id');
     }
 
     public function assignedTo(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'property_assigned_to');
+        return $this->belongsTo(User::class, 'property_assigned_to', 'user_id');
     }
 }

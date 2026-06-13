@@ -14,6 +14,7 @@ use App\Modules\Lead\Resources\LeadResource;
 use App\Modules\Lead\Services\LeadService;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Throwable;
 
 class LeadController extends Controller
@@ -64,10 +65,10 @@ class LeadController extends Controller
         );
     }
 
-    public function show(int $lead_id): JsonResponse
+    public function show(Request $request, int $lead_id): JsonResponse
     {
         try {
-            $lead = $this->leadService->show($lead_id);
+            $lead = $this->leadService->show($lead_id, $request->user());
 
             return $this->successResponse(
                 data: new LeadResource($lead),
@@ -83,7 +84,11 @@ class LeadController extends Controller
     public function update(UpdateLeadRequest $request, int $lead_id): JsonResponse
     {
         try {
-            $lead = $this->leadService->update($lead_id, $request->updateAttributes());
+            $lead = $this->leadService->update(
+                $lead_id,
+                $request->updateAttributes(),
+                $request->user(),
+            );
 
             return $this->successResponse(
                 data: new LeadResource($lead->load(['property', 'createdBy', 'assignedTo'])),

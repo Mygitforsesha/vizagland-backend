@@ -47,12 +47,12 @@ class Lead extends Model
 
     public function createdBy(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'lead_created_by');
+        return $this->belongsTo(User::class, 'lead_created_by', 'user_id');
     }
 
     public function assignedTo(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'lead_assigned_to');
+        return $this->belongsTo(User::class, 'lead_assigned_to', 'user_id');
     }
 
     public function assignments(): HasMany

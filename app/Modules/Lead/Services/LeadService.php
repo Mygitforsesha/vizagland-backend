@@ -40,7 +40,7 @@ class LeadService
             ...$data,
             'lead_source' => $source,
             'lead_status' => LeadStatus::Open,
-            'lead_created_by' => $user->id,
+            'lead_created_by' => $user->user_id,
             'lead_assigned_to' => null,
         ]);
     }
@@ -55,11 +55,11 @@ class LeadService
         return $this->leadRepository->paginate($filters, $perPage, $scopedUser);
     }
 
-    public function show(int $leadId): Lead
+    public function show(int $leadId, User $user): Lead
     {
         $lead = $this->leadRepository->findById($leadId);
 
-        if ($lead === null) {
+        if ($lead === null || ! $this->leadRepository->userCanAccess($lead, $user)) {
             throw (new ModelNotFoundException)->setModel(Lead::class, [$leadId]);
         }
 
@@ -69,12 +69,12 @@ class LeadService
     /**
      * @param  array<string, mixed>  $attributes
      */
-    public function update(int $leadId, array $attributes): Lead
+    public function update(int $leadId, array $attributes, User $user): Lead
     {
-        return DB::transaction(function () use ($leadId, $attributes) {
+        return DB::transaction(function () use ($leadId, $attributes, $user) {
             $lead = $this->leadRepository->findById($leadId);
 
-            if ($lead === null) {
+            if ($lead === null || ! $this->leadRepository->userCanAccess($lead, $user)) {
                 throw (new ModelNotFoundException)->setModel(Lead::class, [$leadId]);
             }
 
@@ -98,7 +98,7 @@ class LeadService
             $this->leadRepository->createAssignment([
                 'lead_id' => $leadId,
                 'lead_assigned_to' => $assigneeId,
-                'lead_assigned_by' => $assignedBy->id,
+                'lead_assigned_by' => $assignedBy->user_id,
                 'lead_assignment_remarks' => $remarks,
             ]);
 

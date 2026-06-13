@@ -20,20 +20,20 @@ class DashboardService
     public function employeeDashboard(User $user): array
     {
         return [
-            'assigned_properties' => $this->dashboardRepository->employeeAssignedPropertiesCount($user->id),
+            'assigned_properties' => $this->dashboardRepository->employeeAssignedPropertiesCount($user->user_id),
             'completed_properties' => $this->dashboardRepository->employeeAssignedPropertiesCount(
-                $user->id,
+                $user->user_id,
                 PropertyStatus::Approved,
             ),
             'draft_properties' => $this->dashboardRepository->employeeAssignedPropertiesCount(
-                $user->id,
+                $user->user_id,
                 PropertyStatus::Draft,
             ),
-            'assigned_leads' => $this->dashboardRepository->employeeLeadsCount($user->id),
-            'open_leads' => $this->dashboardRepository->employeeLeadsCount($user->id, LeadStatus::Open),
-            'closed_leads' => $this->dashboardRepository->employeeLeadsCount($user->id, LeadStatus::Closed),
-            'today_followups' => $this->dashboardRepository->todayFollowUpsCount($user->id),
-            'pending_followups' => $this->dashboardRepository->pendingFollowUpsCount($user->id),
+            'assigned_leads' => $this->dashboardRepository->employeeLeadsCount($user->user_id),
+            'open_leads' => $this->dashboardRepository->employeeLeadsCount($user->user_id, LeadStatus::Open),
+            'closed_leads' => $this->dashboardRepository->employeeLeadsCount($user->user_id, LeadStatus::Closed),
+            'today_followups' => $this->dashboardRepository->todayFollowUpsCount($user->user_id),
+            'pending_followups' => $this->dashboardRepository->pendingFollowUpsCount($user->user_id),
         ];
     }
 
@@ -43,12 +43,12 @@ class DashboardService
     public function agentDashboard(User $user): array
     {
         return [
-            'my_properties' => $this->dashboardRepository->agentPropertiesCount($user->id),
-            'draft_properties' => $this->dashboardRepository->agentPropertiesCount($user->id, PropertyStatus::Draft),
-            'approved_properties' => $this->dashboardRepository->agentPropertiesCount($user->id, PropertyStatus::Approved),
-            'rejected_properties' => $this->dashboardRepository->agentPropertiesCount($user->id, PropertyStatus::Rejected),
-            'my_leads' => $this->dashboardRepository->agentLeadsCount($user->id),
-            'converted_leads' => $this->dashboardRepository->agentLeadsCount($user->id, LeadStatus::Converted),
+            'my_properties' => $this->dashboardRepository->agentPropertiesCount($user->user_id),
+            'draft_properties' => $this->dashboardRepository->agentPropertiesCount($user->user_id, PropertyStatus::Draft),
+            'approved_properties' => $this->dashboardRepository->agentPropertiesCount($user->user_id, PropertyStatus::Approved),
+            'rejected_properties' => $this->dashboardRepository->agentPropertiesCount($user->user_id, PropertyStatus::Rejected),
+            'my_leads' => $this->dashboardRepository->agentLeadsCount($user->user_id),
+            'converted_leads' => $this->dashboardRepository->agentLeadsCount($user->user_id, LeadStatus::Converted),
         ];
     }
 

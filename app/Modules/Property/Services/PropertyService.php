@@ -14,6 +14,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use RuntimeException;
 use Throwable;
 
 class PropertyService
@@ -58,6 +59,29 @@ class PropertyService
             }
 
             return $this->propertyRepository->update($property, $attributes);
+        });
+    }
+
+    public function submitForReview(int $propertyId, User $user): Property
+    {
+        return DB::transaction(function () use ($propertyId, $user) {
+            $property = $this->propertyRepository->findById($propertyId);
+
+            if ($property === null) {
+                throw (new ModelNotFoundException)->setModel(Property::class, [$propertyId]);
+            }
+
+            if ($property->property_created_by !== $user->user_id) {
+                throw new RuntimeException('You are not allowed to submit this property for review.');
+            }
+
+            if ($property->property_status !== PropertyStatus::Draft) {
+                throw new RuntimeException('Only draft properties can be submitted for review.');
+            }
+
+            return $this->propertyRepository->update($property, [
+                'property_status' => PropertyStatus::PendingReview,
+            ]);
         });
     }
 
@@ -193,16 +217,16 @@ class PropertyService
         if ($user->isEmployee()) {
             return [
                 'property_created_by_type' => PropertyCreatedByType::Employee,
-                'property_created_by_id' => $user->id,
-                'property_created_by' => $user->id,
+                'property_created_by_id' => $user->user_id,
+                'property_created_by' => $user->user_id,
                 'property_source' => PropertySource::Employee,
             ];
         }
 
         return [
             'property_created_by_type' => PropertyCreatedByType::Agent,
-            'property_created_by_id' => $user->id,
-            'property_created_by' => $user->id,
+            'property_created_by_id' => $user->user_id,
+            'property_created_by' => $user->user_id,
             'property_source' => PropertySource::Agent,
         ];
     }
