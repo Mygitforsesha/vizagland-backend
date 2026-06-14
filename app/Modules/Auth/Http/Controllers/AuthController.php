@@ -4,6 +4,8 @@ namespace App\Modules\Auth\Http\Controllers;
 
 use App\Constants\HttpStatus;
 use App\Http\Controllers\Controller;
+use App\Modules\ActivityLog\Enums\ActivityLogType;
+use App\Modules\ActivityLog\Services\ActivityLogService;
 use App\Modules\Auth\Http\Requests\LoginRequest;
 use App\Modules\Auth\Http\Requests\RegisterRequest;
 use App\Modules\Auth\Services\AuthService;
@@ -19,6 +21,7 @@ class AuthController extends Controller
 {
     public function __construct(
         private readonly AuthService $authService,
+        private readonly ActivityLogService $activityLogService,
     ) {}
 
     public function register(RegisterRequest $request): JsonResponse
@@ -71,6 +74,15 @@ class AuthController extends Controller
 
         $user->update(['user_last_login_at' => now()]);
 
+        $this->activityLogService->log(
+            type: ActivityLogType::Authentication,
+            action: 'login',
+            description: "User logged in: {$user->user_full_name}",
+            entityType: 'user',
+            entityId: $user->user_id,
+            user: $user,
+        );
+
         $token = $user->createToken('api-token')->plainTextToken;
 
         return $this->successResponse(
@@ -85,7 +97,18 @@ class AuthController extends Controller
 
     public function logout(Request $request): JsonResponse
     {
-        $request->user()->currentAccessToken()->delete();
+        $user = $request->user();
+
+        $this->activityLogService->log(
+            type: ActivityLogType::Authentication,
+            action: 'logout',
+            description: "User logged out: {$user->user_full_name}",
+            entityType: 'user',
+            entityId: $user->user_id,
+            user: $user,
+        );
+
+        $user->currentAccessToken()->delete();
 
         return $this->successResponse(
             message: 'Logged out successfully.',

@@ -16,10 +16,10 @@ class PropertyDocument extends Model
      */
     protected $fillable = [
         'property_id',
-        'property_document_name',
-        'property_document_type',
+        'property_document_original_name',
         'property_document_path',
         'property_document_size',
+        'property_document_mime_type',
     ];
 
     protected function casts(): array

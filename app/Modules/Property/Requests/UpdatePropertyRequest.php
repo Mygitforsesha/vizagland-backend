@@ -33,11 +33,13 @@ class UpdatePropertyRequest extends FormRequest
             'property_pincode' => ['sometimes', 'nullable', 'string', 'max:10'],
             'property_latitude' => ['sometimes', 'nullable', 'numeric', 'between:-90,90'],
             'property_longitude' => ['sometimes', 'nullable', 'numeric', 'between:-180,180'],
-            'property_lp_number' => ['sometimes', 'nullable', 'string', 'max:100'],
+            'property_lp_no' => ['sometimes', 'nullable', 'string', 'max:100'],
             'property_year' => ['sometimes', 'nullable', 'integer', 'min:1800', 'max:'.(date('Y') + 5)],
-            'property_plot_number' => ['sometimes', 'nullable', 'string', 'max:100'],
+            'property_plot_no' => ['sometimes', 'nullable', 'string', 'max:100'],
             'property_bedroom_count' => ['sometimes', 'nullable', 'integer', 'min:0', 'max:50'],
             'property_ownership_type' => ['sometimes', 'nullable', Rule::enum(PropertyOwnershipType::class)],
+            'property_status' => ['prohibited'],
+            'property_verified' => ['prohibited'],
         ];
     }
 
@@ -60,9 +62,9 @@ class UpdatePropertyRequest extends FormRequest
             'property_pincode' => 'property_pincode',
             'property_latitude' => 'property_latitude',
             'property_longitude' => 'property_longitude',
-            'property_lp_number' => 'property_lp_number',
+            'property_lp_no' => 'property_lp_no',
             'property_year' => 'property_year',
-            'property_plot_number' => 'property_plot_number',
+            'property_plot_no' => 'property_plot_no',
             'property_bedroom_count' => 'property_bedrooms',
             'property_ownership_type' => 'property_ownership_type',
         ];

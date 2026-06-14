@@ -2,6 +2,7 @@
 
 namespace App\Modules\PublicSite\Repositories;
 
+use App\Modules\Property\Enums\PropertyRecordType;
 use App\Modules\Property\Enums\PropertyStatus;
 use App\Modules\Property\Models\Property;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -16,6 +17,7 @@ class PublicPropertyRepository
                 'images' => fn (Builder $query) => $query->orderBy('property_image_sort_order'),
             ])
             ->where('property_id', $propertyId)
+            ->where('property_record_type', PropertyRecordType::VizaglandCopy)
             ->where('property_status', PropertyStatus::Approved)
             ->first();
     }
@@ -40,6 +42,7 @@ class PublicPropertyRepository
                 'created_at',
             ])
             ->with(['images' => fn (Builder $q) => $q->orderBy('property_image_sort_order')->limit(1)])
+            ->where('property_record_type', PropertyRecordType::VizaglandCopy)
             ->where('property_status', PropertyStatus::Approved)
             ->orderByDesc('property_published_at');
 
@@ -67,7 +70,9 @@ class PublicPropertyRepository
                 'property_published_at',
             ])
             ->with(['images' => fn (Builder $q) => $q->orderBy('property_image_sort_order')->limit(1)])
+            ->where('property_record_type', PropertyRecordType::VizaglandCopy)
             ->where('property_status', PropertyStatus::Approved)
+            ->where('property_is_featured', true)
             ->orderByDesc('property_published_at')
             ->limit($limit)
             ->get();

@@ -153,18 +153,17 @@ Laravel timestamps (`created_at`, `updated_at`) and foreign keys (`user_id`, `pr
 
 ## Property Workflow
 
-```
-PUBLIC → DRAFT
-AGENT → DRAFT
-EMPLOYEE → DRAFT
+Every new property is created with `property_status = draft`. The frontend cannot set status on create or update.
 
-ADMIN REVIEW →
-  • APPROVED
-  • REJECTED
-  • REQUEST_CHANGES
-
-APPROVED → Visible on Public Website
 ```
+CREATE (agent / employee / public) → draft
+SUBMIT FOR REVIEW (creator)        → pending_review
+ADMIN APPROVE                      → approved
+ADMIN REJECT                       → rejected
+ADMIN REQUEST CHANGES              → draft
+```
+
+Only admin review APIs can set `approved`. Public listing shows `approved` properties only.
 
 ## Property Features
 

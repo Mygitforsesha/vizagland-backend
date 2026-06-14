@@ -42,8 +42,9 @@ class PropertyMediaService
 
                 return $this->propertyMediaRepository->createImage($propertyId, [
                     'property_image_path' => $uploadedPath,
-                    'property_image_name' => $image->getClientOriginalName(),
+                    'property_image_original_name' => $image->getClientOriginalName(),
                     'property_image_size' => $image->getSize(),
+                    'property_image_mime_type' => $image->getMimeType(),
                     'property_image_sort_order' => $this->propertyMediaRepository->getNextImageSortOrder($propertyId),
                 ]);
             });
@@ -73,8 +74,8 @@ class PropertyMediaService
                 $uploadedPath = $document->store('properties/documents', 'public');
 
                 return $this->propertyMediaRepository->createDocument($propertyId, [
-                    'property_document_name' => $document->getClientOriginalName(),
-                    'property_document_type' => strtolower($document->getClientOriginalExtension()),
+                    'property_document_original_name' => $document->getClientOriginalName(),
+                    'property_document_mime_type' => $document->getMimeType(),
                     'property_document_path' => $uploadedPath,
                     'property_document_size' => $document->getSize(),
                 ]);
@@ -97,6 +98,12 @@ class PropertyMediaService
                 throw (new ModelNotFoundException)->setModel(PropertyImage::class, [$propertyImageId]);
             }
 
+            $property = $this->propertyRepository->findById($image->property_id);
+
+            if ($property?->isOriginal()) {
+                throw new RuntimeException('Original property records cannot be modified.');
+            }
+
             $path = $image->property_image_path;
             $this->propertyMediaRepository->deleteImage($image);
 
@@ -115,6 +122,12 @@ class PropertyMediaService
                 throw (new ModelNotFoundException)->setModel(PropertyDocument::class, [$propertyDocumentId]);
             }
 
+            $property = $this->propertyRepository->findById($document->property_id);
+
+            if ($property?->isOriginal()) {
+                throw new RuntimeException('Original property records cannot be modified.');
+            }
+
             $path = $document->property_document_path;
             $this->propertyMediaRepository->deleteDocument($document);
 
@@ -126,11 +139,17 @@ class PropertyMediaService
 
     private function ensurePropertyExists(int $propertyId): void
     {
-        if ($this->propertyRepository->findById($propertyId) === null) {
+        $property = $this->propertyRepository->findById($propertyId);
+
+        if ($property === null) {
             throw (new ModelNotFoundException)->setModel(
                 \App\Modules\Property\Models\Property::class,
                 [$propertyId],
             );
+        }
+
+        if ($property->isOriginal()) {
+            throw new RuntimeException('Original property records cannot be modified.');
         }
     }
 }

@@ -2,7 +2,10 @@
 
 namespace App\Modules\Auth\Services;
 
+use App\Modules\ActivityLog\Enums\ActivityLogType;
+use App\Modules\ActivityLog\Services\ActivityLogService;
 use App\Modules\Auth\Repositories\UserRegistrationRepository;
+use App\Modules\Notification\Services\NotificationService;
 use App\Modules\User\Enums\RegistrationTypeCategory;
 use App\Modules\User\Enums\RegistrationTypeValue;
 use App\Modules\User\Enums\UserRole;
@@ -13,6 +16,8 @@ class AuthService
 {
     public function __construct(
         private readonly UserRegistrationRepository $userRegistrationRepository,
+        private readonly NotificationService $notificationService,
+        private readonly ActivityLogService $activityLogService,
     ) {}
 
     /**
@@ -32,7 +37,20 @@ class AuthService
             $this->userRegistrationRepository->createProfile($user->user_id, $profileAttributes);
             $this->userRegistrationRepository->createRegistrationTypes($user->user_id, $registrationTypes);
 
-            return $user->fresh(['profile', 'registrationTypes']);
+            $user = $user->fresh(['profile', 'registrationTypes']);
+
+            $this->notificationService->notifyUserRegistered($user);
+
+            $this->activityLogService->log(
+                type: ActivityLogType::Authentication,
+                action: 'registered',
+                description: "User registered: {$user->user_full_name} ({$user->user_phone})",
+                entityType: 'user',
+                entityId: $user->user_id,
+                user: $user,
+            );
+
+            return $user;
         });
     }
 
@@ -47,6 +65,10 @@ class AuthService
 
         if ($roleValues->contains(RegistrationTypeValue::Agent->value)) {
             return UserRole::Agent;
+        }
+
+        if ($roleValues->contains(RegistrationTypeValue::Employee->value)) {
+            return UserRole::Employee;
         }
 
         return UserRole::Member;

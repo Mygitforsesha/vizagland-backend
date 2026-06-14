@@ -16,6 +16,7 @@ use App\Modules\Property\Resources\PropertyResource;
 use App\Modules\Property\Services\PropertyService;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use RuntimeException;
 use Throwable;
 
@@ -38,10 +39,13 @@ class PropertyController extends Controller
         );
     }
 
-    public function show(int $property_id): JsonResponse
+    public function show(Request $request, int $property_id): JsonResponse
     {
         try {
-            $property = $this->propertyService->show($property_id);
+            $property = $this->propertyService->show(
+                propertyId: $property_id,
+                user: $request->user(),
+            );
 
             return $this->successResponse(
                 data: new PropertyDetailsResource($property),
@@ -50,6 +54,11 @@ class PropertyController extends Controller
             return $this->errorResponse(
                 message: 'Property not found.',
                 statusCode: HttpStatus::NOT_FOUND,
+            );
+        } catch (RuntimeException $exception) {
+            return $this->errorResponse(
+                message: $exception->getMessage(),
+                statusCode: HttpStatus::FORBIDDEN,
             );
         }
     }
@@ -71,6 +80,11 @@ class PropertyController extends Controller
                 message: 'Property not found.',
                 statusCode: HttpStatus::NOT_FOUND,
             );
+        } catch (RuntimeException $exception) {
+            return $this->errorResponse(
+                message: $exception->getMessage(),
+                statusCode: HttpStatus::UNPROCESSABLE_ENTITY,
+            );
         } catch (Throwable $exception) {
             report($exception);
 
@@ -84,16 +98,24 @@ class PropertyController extends Controller
     public function store(CreatePropertyRequest $request): JsonResponse
     {
         try {
-            $result = $this->propertyService->createAuthenticated(
-                data: $request->validated(),
-                images: $request->file('property_images', []),
-                documents: $request->file('property_documents', []),
-                user: $request->user(),
-            );
+            $user = $request->user();
+
+            $result = $user !== null
+                ? $this->propertyService->createAuthenticated(
+                    data: $request->propertyAttributes(),
+                    images: $request->file('property_images', []),
+                    documents: $request->file('property_documents', []),
+                    user: $user,
+                )
+                : $this->propertyService->createPublic(
+                    data: $request->propertyAttributes(),
+                    images: $request->file('property_images', []),
+                    documents: $request->file('property_documents', []),
+                );
 
             return $this->successResponse(
                 data: new PropertyCreatedResource($result),
-                message: 'Property created successfully.',
+                message: 'Property submitted successfully.',
                 statusCode: HttpStatus::CREATED,
             );
         } catch (Throwable $exception) {
@@ -142,14 +164,14 @@ class PropertyController extends Controller
     {
         try {
             $result = $this->propertyService->createPublic(
-                data: $request->validated(),
+                data: $request->propertyAttributes(),
                 images: $request->file('property_images', []),
                 documents: $request->file('property_documents', []),
             );
 
             return $this->successResponse(
                 data: new PropertyCreatedResource($result),
-                message: 'Property created successfully.',
+                message: 'Property submitted successfully.',
                 statusCode: HttpStatus::CREATED,
             );
         } catch (Throwable $exception) {

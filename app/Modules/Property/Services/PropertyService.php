@@ -2,7 +2,11 @@
 
 namespace App\Modules\Property\Services;
 
+use App\Modules\ActivityLog\Enums\ActivityLogType;
+use App\Modules\ActivityLog\Services\ActivityLogService;
+use App\Modules\Notification\Services\NotificationService;
 use App\Modules\Property\Enums\PropertyCreatedByType;
+use App\Modules\Property\Enums\PropertyRecordType;
 use App\Modules\Property\Enums\PropertySource;
 use App\Modules\Property\Enums\PropertyStatus;
 use App\Modules\Property\Models\Property;
@@ -21,6 +25,8 @@ class PropertyService
 {
     public function __construct(
         private readonly PropertyRepository $propertyRepository,
+        private readonly NotificationService $notificationService,
+        private readonly ActivityLogService $activityLogService,
     ) {}
 
     /**
@@ -31,7 +37,7 @@ class PropertyService
         return $this->propertyRepository->paginate($filters, $perPage, $sort);
     }
 
-    public function show(int $propertyId): Property
+    public function show(int $propertyId, User $user): Property
     {
         $property = $this->propertyRepository->findByIdWithDetails($propertyId);
 
@@ -39,7 +45,31 @@ class PropertyService
             throw (new ModelNotFoundException)->setModel(Property::class, [$propertyId]);
         }
 
+        $this->ensureUserCanViewProperty($property, $user);
+
         return $property;
+    }
+
+    private function ensureUserCanViewProperty(Property $property, User $user): void
+    {
+        if ($user->isSuperAdmin() || $user->isAdmin()) {
+            return;
+        }
+
+        if ($property->isOriginal()) {
+            throw new RuntimeException('You do not have permission to view this property.');
+        }
+
+        if ($user->isEmployee() || $user->isAgent()) {
+            $isCreator = $property->property_created_by === $user->user_id;
+            $isAssignee = $property->property_assigned_user_id === $user->user_id;
+
+            if ($isCreator || $isAssignee) {
+                return;
+            }
+        }
+
+        throw new RuntimeException('You do not have permission to view this property.');
     }
 
     /**
@@ -47,11 +77,15 @@ class PropertyService
      */
     public function update(int $propertyId, array $attributes): Property
     {
-        return DB::transaction(function () use ($propertyId, $attributes) {
+        $property = DB::transaction(function () use ($propertyId, $attributes) {
             $property = $this->propertyRepository->findById($propertyId);
 
             if ($property === null) {
                 throw (new ModelNotFoundException)->setModel(Property::class, [$propertyId]);
+            }
+
+            if ($property->isOriginal()) {
+                throw new RuntimeException('Original property records cannot be modified.');
             }
 
             if ($attributes === []) {
@@ -60,15 +94,31 @@ class PropertyService
 
             return $this->propertyRepository->update($property, $attributes);
         });
+
+        $referenceId = $property->property_reference_id ?? (string) $property->property_id;
+        $this->activityLogService->log(
+            type: ActivityLogType::Property,
+            action: 'updated',
+            description: "Updated property {$referenceId}",
+            entityType: 'property',
+            entityId: $property->property_id,
+            metadata: ['property_reference_id' => $referenceId],
+        );
+
+        return $property;
     }
 
     public function submitForReview(int $propertyId, User $user): Property
     {
-        return DB::transaction(function () use ($propertyId, $user) {
+        $property = DB::transaction(function () use ($propertyId, $user) {
             $property = $this->propertyRepository->findById($propertyId);
 
             if ($property === null) {
                 throw (new ModelNotFoundException)->setModel(Property::class, [$propertyId]);
+            }
+
+            if ($property->isOriginal()) {
+                throw new RuntimeException('Original property records cannot be submitted for review.');
             }
 
             if ($property->property_created_by !== $user->user_id) {
@@ -81,19 +131,41 @@ class PropertyService
 
             return $this->propertyRepository->update($property, [
                 'property_status' => PropertyStatus::PendingReview,
+                'property_submitted_at' => now(),
             ]);
         });
+
+        $this->notificationService->notifyPropertySubmitted($property);
+
+        $referenceId = $property->property_reference_id ?? (string) $property->property_id;
+        $this->activityLogService->log(
+            type: ActivityLogType::PropertyReview,
+            action: 'submitted_for_review',
+            description: "Submitted property {$referenceId} for review",
+            entityType: 'property',
+            entityId: $property->property_id,
+            user: $user,
+            metadata: ['property_reference_id' => $referenceId],
+        );
+
+        return $property;
     }
 
     /**
      * @param  array<string, mixed>  $data
      * @param  list<UploadedFile>  $images
      * @param  list<UploadedFile>  $documents
-     * @return array{property: Property, images_count: int, documents_count: int}
+     * @return array{
+     *     original_property: Property,
+     *     vizagland_copy_property: Property,
+     *     property_reference_id: string,
+     *     images_count: int,
+     *     documents_count: int
+     * }
      */
     public function createAuthenticated(array $data, array $images, array $documents, User $user): array
     {
-        return $this->createProperty(
+        return $this->createPropertyPair(
             $data,
             $images,
             $documents,
@@ -105,11 +177,17 @@ class PropertyService
      * @param  array<string, mixed>  $data
      * @param  list<UploadedFile>  $images
      * @param  list<UploadedFile>  $documents
-     * @return array{property: Property, images_count: int, documents_count: int}
+     * @return array{
+     *     original_property: Property,
+     *     vizagland_copy_property: Property,
+     *     property_reference_id: string,
+     *     images_count: int,
+     *     documents_count: int
+     * }
      */
     public function createPublic(array $data, array $images, array $documents): array
     {
-        return $this->createProperty($data, $images, $documents, $this->resolvePublicCreatorContext());
+        return $this->createPropertyPair($data, $images, $documents, $this->resolvePublicCreatorContext());
     }
 
     /**
@@ -117,32 +195,75 @@ class PropertyService
      * @param  list<UploadedFile>  $images
      * @param  list<UploadedFile>  $documents
      * @param  array{property_created_by_type: PropertyCreatedByType, property_created_by_id: ?int, property_created_by: ?int, property_source: PropertySource}  $creatorContext
-     * @return array{property: Property, images_count: int, documents_count: int}
+     * @return array{
+     *     original_property: Property,
+     *     vizagland_copy_property: Property,
+     *     property_reference_id: string,
+     *     images_count: int,
+     *     documents_count: int
+     * }
      */
-    private function createProperty(array $data, array $images, array $documents, array $creatorContext): array
+    private function createPropertyPair(array $data, array $images, array $documents, array $creatorContext): array
     {
         $uploadedPaths = [];
 
         try {
-            return DB::transaction(function () use ($data, $images, $documents, $creatorContext, &$uploadedPaths) {
-                $property = $this->propertyRepository->create(
-                    $this->buildPropertyAttributes($data, $creatorContext),
+            $result = DB::transaction(function () use ($data, $images, $documents, $creatorContext, &$uploadedPaths) {
+                $referenceId = $this->generatePropertyReferenceId();
+                $baseAttributes = $this->buildPropertyAttributes($data, $creatorContext, $referenceId);
+
+                $originalProperty = $this->propertyRepository->create([
+                    ...$baseAttributes,
+                    'property_record_type' => PropertyRecordType::Original,
+                ]);
+
+                $vizaglandCopyProperty = $this->propertyRepository->create([
+                    ...$baseAttributes,
+                    'property_record_type' => PropertyRecordType::VizaglandCopy,
+                    'property_parent_property_id' => $originalProperty->property_id,
+                ]);
+
+                $imagesCount = $this->storeImagesForProperties(
+                    [$originalProperty, $vizaglandCopyProperty],
+                    $images,
+                    $uploadedPaths,
+                );
+                $documentsCount = $this->storeDocumentsForProperties(
+                    [$originalProperty, $vizaglandCopyProperty],
+                    $documents,
+                    $uploadedPaths,
                 );
 
-                $imagesCount = $this->storeImages($property, $images, $uploadedPaths);
-                $documentsCount = $this->storeDocuments($property, $documents, $uploadedPaths);
-
-                return [
-                    'property' => $property->fresh(),
+                $result = [
+                    'original_property' => $originalProperty->fresh(['images', 'documents']),
+                    'vizagland_copy_property' => $vizaglandCopyProperty->fresh(['images', 'documents']),
+                    'property_reference_id' => $referenceId,
                     'images_count' => $imagesCount,
                     'documents_count' => $documentsCount,
                 ];
+
+                return $result;
             });
         } catch (Throwable $exception) {
             $this->cleanupUploadedFiles($uploadedPaths);
 
             throw $exception;
         }
+
+        $this->notificationService->notifyPropertyCreated($result['vizagland_copy_property']);
+
+        $property = $result['vizagland_copy_property'];
+        $referenceId = $result['property_reference_id'];
+        $this->activityLogService->log(
+            type: ActivityLogType::Property,
+            action: 'created',
+            description: "Created property {$referenceId}",
+            entityType: 'property',
+            entityId: $property->property_id,
+            metadata: ['property_reference_id' => $referenceId],
+        );
+
+        return $result;
     }
 
     /**
@@ -150,60 +271,93 @@ class PropertyService
      * @param  array{property_created_by_type: PropertyCreatedByType, property_created_by_id: ?int, property_created_by: ?int, property_source: PropertySource}  $creatorContext
      * @return array<string, mixed>
      */
-    private function buildPropertyAttributes(array $data, array $creatorContext): array
+    private function buildPropertyAttributes(array $data, array $creatorContext, string $referenceId): array
     {
-        $attributes = collect($data)
-            ->except(['property_images', 'property_documents'])
-            ->merge([
-                'property_code' => $data['property_code'] ?? $this->generatePropertyCode(),
-                'property_status' => PropertyStatus::Draft,
-                'property_created_by_type' => $creatorContext['property_created_by_type'],
-                'property_created_by_id' => $creatorContext['property_created_by_id'],
-                'property_created_by' => $creatorContext['property_created_by'],
-                'property_source' => $creatorContext['property_source'],
-            ])
-            ->toArray();
+        unset(
+            $data['property_status'],
+            $data['property_verified'],
+            $data['property_reference_id'],
+            $data['property_submitted_at'],
+            $data['property_approved_at'],
+            $data['property_approved_by_user_id'],
+            $data['property_record_type'],
+            $data['property_parent_property_id'],
+            $data['property_is_featured'],
+            $data['property_view_count'],
+            $data['property_lead_count'],
+            $data['property_is_deleted'],
+            $data['property_assigned_user_id'],
+            $data['property_review_remarks'],
+            $data['property_rejected_reason'],
+        );
 
-        return $attributes;
+        return [
+            ...$data,
+            'property_reference_id' => $referenceId,
+            'property_status' => PropertyStatus::Draft,
+            'property_verified' => false,
+            'property_is_featured' => false,
+            'property_view_count' => 0,
+            'property_lead_count' => 0,
+            'property_is_deleted' => false,
+            'property_assigned_user_id' => null,
+            'property_review_remarks' => null,
+            'property_rejected_reason' => null,
+            'property_created_by_type' => $creatorContext['property_created_by_type'],
+            'property_created_by_id' => $creatorContext['property_created_by_id'],
+            'property_created_by' => $creatorContext['property_created_by'],
+            'property_source' => $creatorContext['property_source'],
+        ];
     }
 
     /**
+     * @param  list<Property>  $properties
      * @param  list<UploadedFile>  $images
      * @param  list<string>  $uploadedPaths
      */
-    private function storeImages(Property $property, array $images, array &$uploadedPaths): int
+    private function storeImagesForProperties(array $properties, array $images, array &$uploadedPaths): int
     {
         foreach ($images as $index => $image) {
             $path = $image->store('properties/images', 'public');
             $uploadedPaths[] = $path;
 
-            $this->propertyRepository->createImage($property->property_id, [
+            $imageAttributes = [
                 'property_image_path' => $path,
-                'property_image_name' => $image->getClientOriginalName(),
+                'property_image_original_name' => $image->getClientOriginalName(),
                 'property_image_size' => $image->getSize(),
+                'property_image_mime_type' => $image->getMimeType(),
                 'property_image_sort_order' => $index,
-            ]);
+            ];
+
+            foreach ($properties as $property) {
+                $this->propertyRepository->createImage($property->property_id, $imageAttributes);
+            }
         }
 
         return count($images);
     }
 
     /**
+     * @param  list<Property>  $properties
      * @param  list<UploadedFile>  $documents
      * @param  list<string>  $uploadedPaths
      */
-    private function storeDocuments(Property $property, array $documents, array &$uploadedPaths): int
+    private function storeDocumentsForProperties(array $properties, array $documents, array &$uploadedPaths): int
     {
         foreach ($documents as $document) {
             $path = $document->store('properties/documents', 'public');
             $uploadedPaths[] = $path;
 
-            $this->propertyRepository->createDocument($property->property_id, [
-                'property_document_name' => $document->getClientOriginalName(),
-                'property_document_type' => strtolower($document->getClientOriginalExtension()),
+            $documentAttributes = [
+                'property_document_original_name' => $document->getClientOriginalName(),
+                'property_document_mime_type' => $document->getMimeType(),
                 'property_document_path' => $path,
                 'property_document_size' => $document->getSize(),
-            ]);
+            ];
+
+            foreach ($properties as $property) {
+                $this->propertyRepository->createDocument($property->property_id, $documentAttributes);
+            }
         }
 
         return count($documents);
@@ -244,13 +398,13 @@ class PropertyService
         ];
     }
 
-    private function generatePropertyCode(): string
+    private function generatePropertyReferenceId(): string
     {
         do {
-            $code = 'VL-'.strtoupper(Str::random(8));
-        } while (Property::query()->where('property_code', $code)->exists());
+            $referenceId = 'VL-'.strtoupper(Str::random(8));
+        } while (Property::query()->where('property_reference_id', $referenceId)->exists());
 
-        return $code;
+        return $referenceId;
     }
 
     /**

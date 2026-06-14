@@ -39,7 +39,7 @@ trait ValidatesPropertyAttributes
             'property_images' => ['nullable', 'array', 'max:30'],
             'property_images.*' => ['file', 'mimes:jpg,jpeg,png,webp', 'max:10240'],
             'property_documents' => ['nullable', 'array', 'max:30'],
-            'property_documents.*' => ['file', 'mimes:pdf,doc,docx', 'max:20480'],
+            'property_documents.*' => ['file', 'mimes:pdf,doc,docx,zip,jpg,jpeg,png,webp', 'max:10240'],
         ];
     }
 }

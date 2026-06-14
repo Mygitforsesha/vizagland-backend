@@ -2,17 +2,19 @@
 
 namespace App\Modules\Property\Resources;
 
-use App\Modules\Property\Models\Property;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-/**
- * @mixin Property
- */
 class PropertyCreatedResource extends JsonResource
 {
     /**
-     * @param  array{property: Property, images_count: int, documents_count: int}  $resource
+     * @param  array{
+     *     original_property: \App\Modules\Property\Models\Property,
+     *     vizagland_copy_property: \App\Modules\Property\Models\Property,
+     *     property_reference_id: string,
+     *     images_count: int,
+     *     documents_count: int
+     * }  $resource
      */
     public function __construct($resource)
     {
@@ -24,14 +26,10 @@ class PropertyCreatedResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        /** @var Property $property */
-        $property = $this->resource['property'];
-
         return [
-            'property_id' => $property->property_id,
-            'property_status' => $property->property_status->value,
-            'images_count' => $this->resource['images_count'],
-            'documents_count' => $this->resource['documents_count'],
+            'original_property_id' => $this->resource['original_property']->property_id,
+            'vizagland_copy_property_id' => $this->resource['vizagland_copy_property']->property_id,
+            'property_reference_id' => $this->resource['property_reference_id'],
         ];
     }
 }

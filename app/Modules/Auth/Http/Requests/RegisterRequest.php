@@ -17,6 +17,27 @@ class RegisterRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        $gender = $this->input('user_gender');
+
+        if (is_string($gender)) {
+            $gender = strtolower(trim($gender));
+            $this->merge([
+                'user_gender' => $gender === '' ? null : $gender,
+            ]);
+        }
+
+        if (is_array($this->input('user_roles'))) {
+            $this->merge([
+                'user_roles' => array_map(
+                    static fn (mixed $role): mixed => is_string($role) ? strtolower(trim($role)) : $role,
+                    $this->input('user_roles'),
+                ),
+            ]);
+        }
+    }
+
     /**
      * @return array<string, mixed>
      */
@@ -25,7 +46,7 @@ class RegisterRequest extends FormRequest
         return array_merge($this->registrationTypeRules(), [
             'user_full_name' => ['required', 'string', 'max:255'],
             'user_dob' => ['nullable', 'date', 'before:today'],
-            'user_gender' => ['nullable', Rule::enum(UserGender::class)],
+            'user_gender' => ['nullable', 'string', Rule::in(UserGender::values())],
             'user_phone' => ['required', 'string', 'regex:/^[6-9]\d{9}$/', 'unique:users,user_phone'],
             'user_email' => ['nullable', 'email', 'max:255', 'unique:users,user_email'],
             'user_village' => ['nullable', 'string', 'max:255'],
@@ -61,7 +82,7 @@ class RegisterRequest extends FormRequest
      */
     public function profileAttributes(): array
     {
-        return [
+        return array_filter([
             'user_dob' => $this->input('user_dob'),
             'user_gender' => $this->input('user_gender'),
             'user_village' => $this->input('user_village'),
@@ -74,7 +95,7 @@ class RegisterRequest extends FormRequest
             'user_vmrda' => $this->input('user_vmrda'),
             'user_registration_area' => $this->input('user_registration_area'),
             'user_authority' => $this->input('user_authority'),
-        ];
+        ], fn ($value) => $value !== null && $value !== '');
     }
 
     /**

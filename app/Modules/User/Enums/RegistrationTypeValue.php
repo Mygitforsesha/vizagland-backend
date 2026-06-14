@@ -10,6 +10,7 @@ enum RegistrationTypeValue: string
     case OwnerFriend = 'owner_friend';
     case Realtor = 'realtor';
     case Agent = 'agent';
+    case Employee = 'employee';
     case MarketingPerson = 'marketing_person';
     case Promoter = 'promoter';
     case Company = 'company';
@@ -46,6 +47,7 @@ enum RegistrationTypeValue: string
             self::OwnerFriend => 'Owner Friend',
             self::Realtor => 'Realtor',
             self::Agent => 'Agent',
+            self::Employee => 'Employee',
             self::MarketingPerson => 'Marketing Person',
             self::Promoter => 'Promoter',
             self::Company => 'Company',
@@ -79,7 +81,7 @@ enum RegistrationTypeValue: string
     {
         return match ($this) {
             self::Buyer, self::Seller, self::OwnerRelative, self::OwnerFriend,
-            self::Realtor, self::Agent, self::MarketingPerson, self::Promoter,
+            self::Realtor, self::Agent, self::Employee, self::MarketingPerson, self::Promoter,
             self::Company, self::Builder, self::Developer => RegistrationTypeCategory::Role,
             self::CivilEngineer, self::Architect, self::StructuralEngineer => RegistrationTypeCategory::Professional,
             self::DiamondMember, self::GoldMember, self::PlatinumMember, self::BronzeMember => RegistrationTypeCategory::Membership,

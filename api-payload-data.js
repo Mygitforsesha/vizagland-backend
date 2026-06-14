@@ -1,140 +1,53 @@
 const mockdataPropertyPayload = {
-    "referenceId": "VL-RKBZ93YD",
-    "submissionSource": "post-property",
-    "platform": "web",
-    "status": "pending",
-    "verified": false,
-    "submittedAt": "2026-06-13T01:41:35.495Z",
-    "createdAt": "2026-06-13T01:41:35.495Z",
-    "updatedAt": "2026-06-13T01:41:35.495Z",
-    "propertyApproval": {
-        "approvedBy": "GVMC"
+    property_approval: {
+        property_approval_authority: "GVMC"
     },
-    "villageDetails": {
-        "village": "chodavaram",
-        "nearbyLocation": "Railway Station",
-        "customNearby": "waterTank",
-        "district": "anakapalli",
-        "mandal": "chodavaram",
-        "panchayati": "chodavaram",
-        "gvmc": "anakapalli",
-        "vmrda": "anakapalli",
-        "regArea": "near bus stand",
-        "gvmcVmrda": "vizag"
+    property_location: {
+        property_village: "chodavaram",
+        property_nearby_location: "Railway Station",
+        property_custom_nearby_location: "waterTank",
+        property_district: "anakapalli",
+        property_mandal: "chodavaram",
+        property_panchayati: "chodavaram",
+        property_gvmc: "anakapalli",
+        property_vmrda: "anakapalli",
+        property_registration_area: "near bus stand",
+        property_authority: "GVMC"
     },
-    "propertyGroupAndTypes": {
-        "residentialType": "Plot",
-        "commercialType": "Industrial Land",
-        "developmentType": "Gated Community",
-        "layoutType": "Farm Plots",
-        "propertyStatus": "Under Construction",
-        "constructionType": "Individual House"
+    property_group_and_types: {
+        property_residential_type: "Plot",
+        property_commercial_type: "Industrial Land",
+        property_development_type: "Gated Community",
+        property_layout_type: "Farm Plots",
+        property_construction_status: "Under Construction",
+        property_construction_type: "Individual House"
     },
-    "propertyDetails": {
-        "priceValue": 2302302,
-        "priceRange": "16 - 20 Lakhs",
-        "areaValue": 1452,
-        "areaUnit": "Sq.Yards",
-        "pricePerSqft": "1000 - 3000",
-        "propertyAge": "5-10 Years",
-        "facing": "North-West",
-        "totalFloors": 6,
-        "floorNumber": "2nd Floor",
-        "furnishing": "Semi-Furnished",
-        "propertyUnder": "Government",
-        "lpNo": "5",
-        "plotNo": "2",
-        "year": 2025,
-        "bedRooms": 2
+    property_details: {
+        property_price: 2302302,
+        property_price_range: "16 - 20 Lakhs",
+        property_area: 1452,
+        property_area_unit: "Sq.Yards",
+        property_price_per_sqft: "1000 - 3000",
+        property_age: "5-10 Years",
+        property_facing: "North-West",
+        property_total_floors: 6,
+        property_floor_number: "2nd Floor",
+        property_furnishing: "Semi-Furnished",
+        property_under: "Government",
+        property_lp_no: "5",
+        property_plot_no: "2",
+        property_year: 2025,
+        property_bedrooms: 2
     },
-    "otherServices": {
-        "service": "Encumbrance Certificate (EC)"
+    property_owner: {
+        property_owner_name: "naidu",
+        property_owner_phone: "7896325410",
+        property_owner_email: "sai@gmail.com"
     },
-    "propertyImages": [
-        {
-            "id": "1781314866161-z3jm967",
-            "name": "screencapture-21-120-168-184-host-secureserver-net-2083-cpsess4490284629-frontend-jupiter-index-html-2026-06-10-19_42_20.png",
-            "size": 227113,
-            "mimeType": "image/png",
-            "previewUrl": "blob:http://localhost:5173/b7f80ee5-eb65-4dd1-aaa6-0cd14f81da8e",
-            "file": {
-                "name": "screencapture-21-120-168-184-host-secureserver-net-2083-cpsess4490284629-frontend-jupiter-index-html-2026-06-10-19_42_20.png",
-                "lastModified": 1781100783775
-            }
-        },
-        {
-            "id": "1781314866161-jf2z35q",
-            "name": "WhatsApp Image 2026-06-10 at 18.35.36.jpeg",
-            "size": 67735,
-            "mimeType": "image/jpeg",
-            "previewUrl": "blob:http://localhost:5173/349f481a-7430-49a9-b3b8-05cbe02eb343",
-            "file": {
-                "name": "WhatsApp Image 2026-06-10 at 18.35.36.jpeg",
-                "lastModified": 1781096800682
-            }
-        },
-        {
-            "id": "1781314866162-53lyoo0",
-            "name": "WhatsApp Image 2026-06-10 at 17.57.48.jpeg",
-            "size": 142182,
-            "mimeType": "image/jpeg",
-            "previewUrl": "blob:http://localhost:5173/ae4a807a-152a-4871-9b45-03a6d81ef62e",
-            "file": {
-                "name": "WhatsApp Image 2026-06-10 at 17.57.48.jpeg",
-                "lastModified": 1781094511051
-            }
-        },
-        {
-            "id": "1781314866162-9pqe5e2",
-            "name": "WhatsApp Image 2026-06-10 at 17.48.37.jpeg",
-            "size": 101382,
-            "mimeType": "image/jpeg",
-            "previewUrl": "blob:http://localhost:5173/bd44cd96-6d29-4028-88eb-5e66eaae25f1",
-            "file": {
-                "name": "WhatsApp Image 2026-06-10 at 17.48.37.jpeg",
-                "lastModified": 1781093924394
-            }
-        }
-    ],
-    "propertyDocuments": [
-        {
-            "id": "1781314880248-666i6cg",
-            "name": "Bangaru_naidu_resume_NonIT_IT.pdf",
-            "size": 79838,
-            "mimeType": "application/pdf",
-            "file": {
-                "path": "./Bangaru_naidu_resume_NonIT_IT.pdf",
-                "relativePath": "./Bangaru_naidu_resume_NonIT_IT.pdf"
-            }
-        },
-        {
-            "id": "1781314880248-ppncon2",
-            "name": "stitch.zip",
-            "size": 91215,
-            "mimeType": "application/x-zip-compressed",
-            "file": {
-                "path": "./stitch.zip",
-                "relativePath": "./stitch.zip"
-            }
-        }
-    ],
-    "customer": {
-        "name": "naidu",
-        "phone": "7896325410",
-        "email": "sai@gmail.com"
-    },
-    "metadata": {
-        "isFeatured": false,
-        "propertyViews": 0,
-        "propertyLeads": 0,
-        "isDeleted": false,
-        "assignedTo": null,
-        "reviewRemarks": "",
-        "rejectedReason": "",
-        "approvedAt": null,
-        "approvedByUser": null
+    property_other_services: {
+        property_service_name: "Encumbrance Certificate (EC)"
     }
-}
+};
 
 const mockdataRegistrationPayload = {
     "user_membership_type": "gold_member",

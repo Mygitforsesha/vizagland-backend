@@ -2,6 +2,8 @@
 
 namespace App\Modules\Lead\Services;
 
+use App\Modules\ActivityLog\Enums\ActivityLogType;
+use App\Modules\ActivityLog\Services\ActivityLogService;
 use App\Modules\Lead\Enums\LeadSource;
 use App\Modules\Lead\Enums\LeadStatus;
 use App\Modules\Lead\Models\Lead;
@@ -15,6 +17,7 @@ class LeadService
 {
     public function __construct(
         private readonly LeadRepository $leadRepository,
+        private readonly ActivityLogService $activityLogService,
     ) {}
 
     /**
@@ -22,13 +25,23 @@ class LeadService
      */
     public function createPublic(array $data): Lead
     {
-        return $this->leadRepository->create([
+        $lead = $this->leadRepository->create([
             ...$data,
             'lead_source' => LeadSource::Public,
             'lead_status' => LeadStatus::Open,
             'lead_created_by' => null,
             'lead_assigned_to' => null,
         ]);
+
+        $this->activityLogService->log(
+            type: ActivityLogType::Lead,
+            action: 'created',
+            description: "Lead created: {$lead->lead_name}",
+            entityType: 'lead',
+            entityId: $lead->lead_id,
+        );
+
+        return $lead;
     }
 
     /**
@@ -36,13 +49,24 @@ class LeadService
      */
     public function createAuthenticated(array $data, User $user, LeadSource $source): Lead
     {
-        return $this->leadRepository->create([
+        $lead = $this->leadRepository->create([
             ...$data,
             'lead_source' => $source,
             'lead_status' => LeadStatus::Open,
             'lead_created_by' => $user->user_id,
             'lead_assigned_to' => null,
         ]);
+
+        $this->activityLogService->log(
+            type: ActivityLogType::Lead,
+            action: 'created',
+            description: "Lead created: {$lead->lead_name}",
+            entityType: 'lead',
+            entityId: $lead->lead_id,
+            user: $user,
+        );
+
+        return $lead;
     }
 
     /**
@@ -71,7 +95,7 @@ class LeadService
      */
     public function update(int $leadId, array $attributes, User $user): Lead
     {
-        return DB::transaction(function () use ($leadId, $attributes, $user) {
+        $lead = DB::transaction(function () use ($leadId, $attributes, $user) {
             $lead = $this->leadRepository->findById($leadId);
 
             if ($lead === null || ! $this->leadRepository->userCanAccess($lead, $user)) {
@@ -84,11 +108,22 @@ class LeadService
 
             return $this->leadRepository->update($lead, $attributes);
         });
+
+        $this->activityLogService->log(
+            type: ActivityLogType::Lead,
+            action: 'updated',
+            description: "Lead updated: {$lead->lead_name}",
+            entityType: 'lead',
+            entityId: $lead->lead_id,
+            user: $user,
+        );
+
+        return $lead;
     }
 
     public function assign(int $leadId, int $assigneeId, User $assignedBy, ?string $remarks): Lead
     {
-        return DB::transaction(function () use ($leadId, $assigneeId, $assignedBy, $remarks) {
+        $lead = DB::transaction(function () use ($leadId, $assigneeId, $assignedBy, $remarks) {
             $lead = $this->leadRepository->findById($leadId);
 
             if ($lead === null) {
@@ -107,5 +142,17 @@ class LeadService
                 'lead_status' => LeadStatus::InProgress,
             ]);
         });
+
+        $this->activityLogService->log(
+            type: ActivityLogType::Lead,
+            action: 'assigned',
+            description: "Lead assigned: {$lead->lead_name}",
+            entityType: 'lead',
+            entityId: $lead->lead_id,
+            user: $assignedBy,
+            metadata: ['lead_assigned_to' => $assigneeId],
+        );
+
+        return $lead;
     }
 }

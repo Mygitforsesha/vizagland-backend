@@ -2,6 +2,8 @@
 
 namespace App\Modules\Property\Services;
 
+use App\Modules\ActivityLog\Enums\ActivityLogType;
+use App\Modules\ActivityLog\Services\ActivityLogService;
 use App\Modules\Property\Enums\PropertyStatus;
 use App\Modules\Property\Enums\ReviewStatus;
 use App\Modules\Property\Models\Property;
@@ -19,6 +21,7 @@ class PropertyReviewService
     public function __construct(
         private readonly PropertyRepository $propertyRepository,
         private readonly PropertyReviewRepository $propertyReviewRepository,
+        private readonly ActivityLogService $activityLogService,
     ) {}
 
     /**
@@ -54,13 +57,30 @@ class PropertyReviewService
 
     public function requestChanges(int $propertyId, User $reviewer, ?string $remarks): PropertyReview
     {
-        return $this->processReview(
+        $review = $this->processReview(
             propertyId: $propertyId,
             reviewer: $reviewer,
             reviewStatus: ReviewStatus::NeedsRevision,
             propertyStatus: PropertyStatus::Draft,
             remarks: $remarks,
         );
+
+        $property = $this->propertyRepository->findById($propertyId);
+
+        if ($property !== null) {
+            $referenceId = $property->property_reference_id ?? (string) $property->property_id;
+            $this->activityLogService->log(
+                type: ActivityLogType::PropertyReview,
+                action: 'request_changes',
+                description: "Requested changes for property {$referenceId}",
+                entityType: 'property',
+                entityId: $property->property_id,
+                user: $reviewer,
+                metadata: ['property_reference_id' => $referenceId],
+            );
+        }
+
+        return $review;
     }
 
     private function processReview(
@@ -78,6 +98,10 @@ class PropertyReviewService
                 throw (new ModelNotFoundException)->setModel(Property::class, [$propertyId]);
             }
 
+            if ($property->isOriginal()) {
+                throw new RuntimeException('Original property records cannot be reviewed.');
+            }
+
             if ($property->property_status !== PropertyStatus::PendingReview) {
                 throw new RuntimeException('Property is not pending review.');
             }
@@ -91,6 +115,17 @@ class PropertyReviewService
 
             if ($setPublishedAt) {
                 $propertyAttributes['property_published_at'] = $now;
+                $propertyAttributes['property_approved_at'] = $now;
+                $propertyAttributes['property_approved_by_user_id'] = $reviewer->user_id;
+                $propertyAttributes['property_verified'] = true;
+            }
+
+            if ($reviewStatus === ReviewStatus::Rejected && $remarks !== null) {
+                $propertyAttributes['property_rejected_reason'] = $remarks;
+            }
+
+            if ($remarks !== null) {
+                $propertyAttributes['property_review_remarks'] = $remarks;
             }
 
             $this->propertyReviewRepository->updateProperty($property, $propertyAttributes);

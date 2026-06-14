@@ -2,6 +2,8 @@
 
 namespace App\Modules\FollowUp\Services;
 
+use App\Modules\ActivityLog\Enums\ActivityLogType;
+use App\Modules\ActivityLog\Services\ActivityLogService;
 use App\Modules\FollowUp\Enums\FollowUpStatus;
 use App\Modules\FollowUp\Models\FollowUp;
 use App\Modules\FollowUp\Repositories\FollowUpRepository;
@@ -15,6 +17,7 @@ class FollowUpService
 {
     public function __construct(
         private readonly FollowUpRepository $followUpRepository,
+        private readonly ActivityLogService $activityLogService,
     ) {}
 
     /**
@@ -22,13 +25,24 @@ class FollowUpService
      */
     public function create(array $data, User $user): FollowUp
     {
-        return DB::transaction(function () use ($data, $user) {
+        $followUp = DB::transaction(function () use ($data, $user) {
             return $this->followUpRepository->create([
                 ...$data,
                 'follow_up_status' => FollowUpStatus::Pending,
                 'follow_up_created_by' => $user->user_id,
             ]);
         });
+
+        $this->activityLogService->log(
+            type: ActivityLogType::FollowUp,
+            action: 'created',
+            description: "Follow-up created (ID: {$followUp->follow_up_id})",
+            entityType: 'follow_up',
+            entityId: $followUp->follow_up_id,
+            user: $user,
+        );
+
+        return $followUp;
     }
 
     /**
@@ -36,7 +50,7 @@ class FollowUpService
      */
     public function update(int $followUpId, array $attributes, User $user): FollowUp
     {
-        return DB::transaction(function () use ($followUpId, $attributes, $user) {
+        $followUp = DB::transaction(function () use ($followUpId, $attributes, $user) {
             $followUp = $this->followUpRepository->findById($followUpId);
 
             if ($followUp === null || ! $this->followUpRepository->userCanAccess($followUp, $user)) {
@@ -61,6 +75,17 @@ class FollowUpService
 
             return $this->followUpRepository->update($followUp, $attributes);
         });
+
+        $this->activityLogService->log(
+            type: ActivityLogType::FollowUp,
+            action: 'updated',
+            description: "Follow-up updated (ID: {$followUp->follow_up_id})",
+            entityType: 'follow_up',
+            entityId: $followUp->follow_up_id,
+            user: $user,
+        );
+
+        return $followUp;
     }
 
     /**

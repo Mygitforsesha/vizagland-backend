@@ -5,7 +5,6 @@ namespace App\Modules\Dashboard\Services;
 use App\Modules\Dashboard\Repositories\DashboardRepository;
 use App\Modules\Lead\Enums\LeadStatus;
 use App\Modules\Property\Enums\PropertyStatus;
-use App\Modules\User\Enums\UserRole;
 use App\Modules\User\Models\User;
 
 class DashboardService
@@ -49,39 +48,6 @@ class DashboardService
             'rejected_properties' => $this->dashboardRepository->agentPropertiesCount($user->user_id, PropertyStatus::Rejected),
             'my_leads' => $this->dashboardRepository->agentLeadsCount($user->user_id),
             'converted_leads' => $this->dashboardRepository->agentLeadsCount($user->user_id, LeadStatus::Converted),
-        ];
-    }
-
-    /**
-     * @return array<string, int>
-     */
-    public function adminDashboard(): array
-    {
-        return [
-            'total_properties' => $this->dashboardRepository->countProperties(),
-            'draft_properties' => $this->dashboardRepository->countProperties(
-                fn ($query) => $query->where('property_status', PropertyStatus::Draft),
-            ),
-            'pending_review_properties' => $this->dashboardRepository->countProperties(
-                fn ($query) => $query->where('property_status', PropertyStatus::PendingReview),
-            ),
-            'approved_properties' => $this->dashboardRepository->countProperties(
-                fn ($query) => $query->where('property_status', PropertyStatus::Approved),
-            ),
-            'rejected_properties' => $this->dashboardRepository->countProperties(
-                fn ($query) => $query->where('property_status', PropertyStatus::Rejected),
-            ),
-            'total_agents' => $this->dashboardRepository->countUsersByRole(UserRole::Agent),
-            'total_employees' => $this->dashboardRepository->countUsersByRole(UserRole::Employee),
-            'total_leads' => $this->dashboardRepository->countLeads(),
-            'open_leads' => $this->dashboardRepository->countLeads(
-                fn ($query) => $query->where('lead_status', LeadStatus::Open),
-            ),
-            'closed_leads' => $this->dashboardRepository->countLeads(
-                fn ($query) => $query->where('lead_status', LeadStatus::Closed),
-            ),
-            'today_properties' => $this->dashboardRepository->propertiesCreatedTodayCount(),
-            'this_month_properties' => $this->dashboardRepository->propertiesCreatedThisMonthCount(),
         ];
     }
 }

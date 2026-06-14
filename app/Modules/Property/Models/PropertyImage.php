@@ -17,8 +17,9 @@ class PropertyImage extends Model
     protected $fillable = [
         'property_id',
         'property_image_path',
-        'property_image_name',
+        'property_image_original_name',
         'property_image_size',
+        'property_image_mime_type',
         'property_image_sort_order',
     ];
 

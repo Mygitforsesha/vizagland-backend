@@ -19,7 +19,7 @@ class PublicPropertyDetailsResource extends JsonResource
     {
         return [
             'property_id' => $this->property_id,
-            'property_code' => $this->property_code,
+            'property_reference_id' => $this->property_reference_id,
             'property_title' => $this->property_title,
             'property_description' => $this->property_description,
             'property_type' => $this->property_type?->value,

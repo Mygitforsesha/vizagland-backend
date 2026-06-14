@@ -2,12 +2,12 @@
 
 namespace App\Modules\Property\Requests;
 
-use App\Modules\Property\Requests\Concerns\ValidatesPropertyAttributes;
+use App\Modules\Property\Requests\Concerns\ValidatesPropertyCreatePayload;
 use Illuminate\Foundation\Http\FormRequest;
 
 class CreatePropertyRequest extends FormRequest
 {
-    use ValidatesPropertyAttributes;
+    use ValidatesPropertyCreatePayload;
 
     public function authorize(): bool
     {
@@ -19,6 +19,6 @@ class CreatePropertyRequest extends FormRequest
      */
     public function rules(): array
     {
-        return $this->propertyAttributeRules();
+        return $this->propertyCreateRules();
     }
 }

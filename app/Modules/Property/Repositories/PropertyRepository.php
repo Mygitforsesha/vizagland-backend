@@ -2,6 +2,7 @@
 
 namespace App\Modules\Property\Repositories;
 
+use App\Modules\Property\Enums\PropertyRecordType;
 use App\Modules\Property\Models\Property;
 use App\Modules\Property\Models\PropertyDocument;
 use App\Modules\Property\Models\PropertyImage;
@@ -32,9 +33,10 @@ class PropertyRepository
         return Property::query()
             ->with([
                 'createdBy',
-                'images' => fn (Builder $query) => $query->orderBy('property_image_sort_order'),
-                'documents' => fn (Builder $query) => $query->orderBy('created_at'),
-                'reviews' => fn (Builder $query) => $query->orderByDesc('created_at'),
+                'parentProperty',
+                'vizaglandCopy',
+                'images' => fn ($query) => $query->orderBy('property_image_sort_order'),
+                'documents' => fn ($query) => $query->orderBy('created_at'),
             ])
             ->where('property_id', $propertyId)
             ->first();
@@ -48,6 +50,7 @@ class PropertyRepository
         $query = Property::query()
             ->select([
                 'property_id',
+                'property_reference_id',
                 'property_title',
                 'property_status',
                 'property_source',
@@ -55,6 +58,7 @@ class PropertyRepository
                 'property_city',
                 'created_at',
             ])
+            ->where('property_record_type', PropertyRecordType::VizaglandCopy)
             ->withCount(['images', 'documents']);
 
         $this->applyFilters($query, $filters);
