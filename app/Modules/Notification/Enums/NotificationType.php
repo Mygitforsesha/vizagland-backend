@@ -8,6 +8,7 @@ enum NotificationType: string
     case PropertySubmitted = 'property_submitted';
     case PropertyApproved = 'property_approved';
     case PropertyRejected = 'property_rejected';
+    case PropertyResolved = 'property_resolved';
     case DuplicateDetected = 'duplicate_detected';
     case UserRegistered = 'user_registered';
     case ReportGenerated = 'report_generated';
@@ -20,6 +21,7 @@ enum NotificationType: string
             self::PropertySubmitted => 'Property Submitted',
             self::PropertyApproved => 'Property Approved',
             self::PropertyRejected => 'Property Rejected',
+            self::PropertyResolved => 'Property Resolved',
             self::DuplicateDetected => 'Duplicate Detected',
             self::UserRegistered => 'User Registered',
             self::ReportGenerated => 'Report Generated',

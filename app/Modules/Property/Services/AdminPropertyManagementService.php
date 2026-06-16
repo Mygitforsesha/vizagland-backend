@@ -125,6 +125,71 @@ class AdminPropertyManagementService
         );
     }
 
+    public function resolve(int $propertyId, User $admin, ?string $resolutionRemarks): Property
+    {
+        return DB::transaction(function () use ($propertyId, $admin, $resolutionRemarks) {
+            $property = $this->propertyRepository->findById($propertyId);
+
+            if ($property === null) {
+                throw (new ModelNotFoundException)->setModel(Property::class, [$propertyId]);
+            }
+
+            if ($property->isOriginal()) {
+                throw new RuntimeException('Original properties cannot be resolved.');
+            }
+
+            $this->ensureResolvableStatus($property);
+
+            $now = now();
+
+            $updatedProperty = $this->propertyRepository->update($property, [
+                'property_status' => PropertyStatus::Resolved,
+                'property_resolution_remarks' => $resolutionRemarks,
+                'property_resolved_at' => $now,
+                'property_resolved_by_user_id' => $admin->user_id,
+            ]);
+
+            $referenceId = $updatedProperty->property_reference_id ?? (string) $updatedProperty->property_id;
+
+            $this->activityLogService->log(
+                type: ActivityLogType::Property,
+                action: 'resolved',
+                description: "Property {$referenceId} marked as resolved",
+                entityType: 'property',
+                entityId: $updatedProperty->property_id,
+                user: $admin,
+                metadata: ['property_reference_id' => $referenceId],
+            );
+
+            $this->notificationService->notifyPropertyResolved($updatedProperty);
+
+            return $updatedProperty;
+        });
+    }
+
+    private function ensureResolvableStatus(Property $property): void
+    {
+        $allowedStatuses = [
+            PropertyStatus::PendingReview,
+            PropertyStatus::RequestChanges,
+            PropertyStatus::Approved,
+            PropertyStatus::Rejected,
+        ];
+
+        if (in_array($property->property_status, $allowedStatuses, true)) {
+            return;
+        }
+
+        $allowedLabels = implode(', ', array_map(
+            static fn (PropertyStatus $status): string => $status->label(),
+            $allowedStatuses,
+        ));
+
+        throw new RuntimeException(
+            "Property cannot be resolved while status is {$property->property_status->label()}. Allowed statuses: {$allowedLabels}.",
+        );
+    }
+
     /**
      * @param  list<PropertyStatus>  $allowedStatuses
      * @param  callable(): array<string, mixed>  $propertyUpdates

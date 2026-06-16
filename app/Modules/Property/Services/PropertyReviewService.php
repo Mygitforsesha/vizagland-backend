@@ -61,7 +61,7 @@ class PropertyReviewService
             propertyId: $propertyId,
             reviewer: $reviewer,
             reviewStatus: ReviewStatus::NeedsRevision,
-            propertyStatus: PropertyStatus::Draft,
+            propertyStatus: PropertyStatus::RequestChanges,
             remarks: $remarks,
         );
 

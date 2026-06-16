@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Modules\Property\Requests\ApproveAdminPropertyRequest;
 use App\Modules\Property\Requests\ArchiveAdminPropertyRequest;
 use App\Modules\Property\Requests\RejectAdminPropertyRequest;
+use App\Modules\Property\Requests\ResolveAdminPropertyRequest;
 use App\Modules\Property\Requests\RestoreAdminPropertyRequest;
 use App\Modules\Property\Resources\PropertyManagementActionResource;
 use App\Modules\Property\Services\AdminPropertyManagementService;
@@ -66,6 +67,38 @@ class AdminPropertyActionController extends Controller
             ),
             'Property restored successfully.',
         );
+    }
+
+    public function resolve(ResolveAdminPropertyRequest $request, int $property_id): JsonResponse
+    {
+        try {
+            $this->adminPropertyManagementService->resolve(
+                propertyId: $property_id,
+                admin: $request->user(),
+                resolutionRemarks: $request->resolutionRemarks(),
+            );
+
+            return $this->successResponse(
+                message: 'Property resolved successfully.',
+            );
+        } catch (ModelNotFoundException) {
+            return $this->errorResponse(
+                message: 'Property not found.',
+                statusCode: HttpStatus::NOT_FOUND,
+            );
+        } catch (RuntimeException $exception) {
+            return $this->errorResponse(
+                message: $exception->getMessage(),
+                statusCode: HttpStatus::UNPROCESSABLE_ENTITY,
+            );
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return $this->errorResponse(
+                message: 'Failed to process property action. Please try again.',
+                statusCode: HttpStatus::INTERNAL_SERVER_ERROR,
+            );
+        }
     }
 
     private function handleAction(callable $action, string $message): JsonResponse

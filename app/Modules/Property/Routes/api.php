@@ -37,6 +37,7 @@ Route::middleware(['auth:sanctum', 'role:admin,super_admin'])->group(function ()
     Route::post('admin/properties/{property_id}/reject', [AdminPropertyActionController::class, 'reject']);
     Route::post('admin/properties/{property_id}/archive', [AdminPropertyActionController::class, 'archive']);
     Route::post('admin/properties/{property_id}/restore', [AdminPropertyActionController::class, 'restore']);
+    Route::post('admin/properties/{property_id}/resolve', [AdminPropertyActionController::class, 'resolve']);
     Route::get('property-reviews', [PropertyReviewController::class, 'index']);
     Route::post('properties/{property_id}/request-changes', [PropertyReviewController::class, 'requestChanges']);
 });

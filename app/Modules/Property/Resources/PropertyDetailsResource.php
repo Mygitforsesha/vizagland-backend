@@ -38,6 +38,9 @@ class PropertyDetailsResource extends JsonResource
                 'property_archived_by_user_id' => $this->property_archived_by_user_id,
                 'property_restored_at' => $this->property_restored_at?->toIso8601String(),
                 'property_restored_by_user_id' => $this->property_restored_by_user_id,
+                'property_resolved_at' => $this->property_resolved_at?->toIso8601String(),
+                'property_resolved_by_user_id' => $this->property_resolved_by_user_id,
+                'property_resolution_remarks' => $this->property_resolution_remarks,
             ],
             'property_location' => [
                 'property_village' => $this->property_village,

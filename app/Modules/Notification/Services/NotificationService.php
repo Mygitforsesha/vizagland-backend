@@ -172,6 +172,27 @@ class NotificationService
         );
     }
 
+    public function notifyPropertyResolved(Property $property): void
+    {
+        $referenceId = $property->property_reference_id ?? (string) $property->property_id;
+        $message = "Property {$referenceId} marked as resolved.";
+
+        $this->notifyAdmins(
+            type: NotificationType::PropertyResolved,
+            title: 'Property Resolved',
+            message: $message,
+        );
+
+        if ($property->property_created_by !== null) {
+            $this->notifyUser(
+                userId: $property->property_created_by,
+                type: NotificationType::PropertyResolved,
+                title: 'Property Resolved',
+                message: $message,
+            );
+        }
+    }
+
     public function notifyUserRegistered(User $user): void
     {
         $this->notifyAdmins(

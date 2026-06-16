@@ -59,6 +59,7 @@ class AdminPropertyRepository
                 'rejectedBy',
                 'archivedBy',
                 'restoredBy',
+                'resolvedBy',
                 'images' => fn ($query) => $query->orderBy('property_image_sort_order'),
                 'documents' => fn ($query) => $query->orderBy('created_at'),
             ])

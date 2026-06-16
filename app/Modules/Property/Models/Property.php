@@ -109,6 +109,9 @@ class Property extends Model
         'property_archived_by_user_id',
         'property_restored_at',
         'property_restored_by_user_id',
+        'property_resolution_remarks',
+        'property_resolved_at',
+        'property_resolved_by_user_id',
     ];
 
     protected function casts(): array
@@ -144,6 +147,7 @@ class Property extends Model
             'property_rejected_at' => 'datetime',
             'property_archived_at' => 'datetime',
             'property_restored_at' => 'datetime',
+            'property_resolved_at' => 'datetime',
         ];
     }
 
@@ -226,5 +230,10 @@ class Property extends Model
     public function restoredBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'property_restored_by_user_id', 'user_id');
+    }
+
+    public function resolvedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'property_resolved_by_user_id', 'user_id');
     }
 }

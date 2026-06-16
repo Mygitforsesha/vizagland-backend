@@ -59,6 +59,7 @@ class ActivityLog extends Model
             'authentication.password_reset' => 'Password Reset',
             'property.created' => 'Property Created',
             'property.updated' => 'Property Updated',
+            'property.resolved' => 'Property Resolved',
             'property_review.submitted_for_review' => 'Submitted For Review',
             'property_review.request_changes' => 'Requested Changes',
             'property_review.approved' => 'Property Approved',
