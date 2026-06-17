@@ -192,6 +192,28 @@ class PropertyService
 
     /**
      * @param  array<string, mixed>  $data
+     * @return array{
+     *     original_property: Property,
+     *     vizagland_copy_property: Property,
+     *     property_reference_id: string,
+     *     images_count: int,
+     *     documents_count: int
+     * }
+     */
+    public function createFromBulkImport(array $data, User $user): array
+    {
+        return $this->createPropertyPair(
+            $data,
+            [],
+            [],
+            $this->resolveAdminImportCreatorContext($user),
+            sendNotifications: false,
+            logActivity: false,
+        );
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
      * @param  list<UploadedFile>  $images
      * @param  list<UploadedFile>  $documents
      * @param  array{property_created_by_type: PropertyCreatedByType, property_created_by_id: ?int, property_created_by: ?int, property_source: PropertySource}  $creatorContext
@@ -203,7 +225,14 @@ class PropertyService
      *     documents_count: int
      * }
      */
-    private function createPropertyPair(array $data, array $images, array $documents, array $creatorContext): array
+    private function createPropertyPair(
+        array $data,
+        array $images,
+        array $documents,
+        array $creatorContext,
+        bool $sendNotifications = true,
+        bool $logActivity = true,
+    ): array
     {
         $uploadedPaths = [];
 
@@ -250,18 +279,22 @@ class PropertyService
             throw $exception;
         }
 
-        $this->notificationService->notifyPropertyCreated($result['vizagland_copy_property']);
+        if ($sendNotifications) {
+            $this->notificationService->notifyPropertyCreated($result['vizagland_copy_property']);
+        }
 
-        $property = $result['vizagland_copy_property'];
-        $referenceId = $result['property_reference_id'];
-        $this->activityLogService->log(
-            type: ActivityLogType::Property,
-            action: 'created',
-            description: "Created property {$referenceId}",
-            entityType: 'property',
-            entityId: $property->property_id,
-            metadata: ['property_reference_id' => $referenceId],
-        );
+        if ($logActivity) {
+            $property = $result['vizagland_copy_property'];
+            $referenceId = $result['property_reference_id'];
+            $this->activityLogService->log(
+                type: ActivityLogType::Property,
+                action: 'created',
+                description: "Created property {$referenceId}",
+                entityType: 'property',
+                entityId: $property->property_id,
+                metadata: ['property_reference_id' => $referenceId],
+            );
+        }
 
         return $result;
     }
@@ -395,6 +428,19 @@ class PropertyService
             'property_created_by_id' => null,
             'property_created_by' => null,
             'property_source' => PropertySource::Public,
+        ];
+    }
+
+    /**
+     * @return array{property_created_by_type: PropertyCreatedByType, property_created_by_id: int, property_created_by: int, property_source: PropertySource}
+     */
+    private function resolveAdminImportCreatorContext(User $user): array
+    {
+        return [
+            'property_created_by_type' => PropertyCreatedByType::Employee,
+            'property_created_by_id' => $user->user_id,
+            'property_created_by' => $user->user_id,
+            'property_source' => PropertySource::Admin,
         ];
     }
 

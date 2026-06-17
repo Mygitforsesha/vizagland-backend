@@ -5,7 +5,10 @@ use App\Modules\Property\Controllers\AdminPropertyController;
 use App\Modules\Property\Controllers\PropertyController;
 use App\Modules\Property\Controllers\PropertyMediaController;
 use App\Modules\Property\Controllers\PropertyReviewController;
+use App\Modules\Property\Controllers\PropertySearchController;
 use Illuminate\Support\Facades\Route;
+
+Route::post('properties/search', [PropertySearchController::class, 'search']);
 
 Route::prefix('public')->group(function (): void {
     Route::post('properties', [PropertyController::class, 'storePublic']);

@@ -386,6 +386,29 @@
           }
         },
         {
+          "name": "Contact Us Page",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Accept", "value": "application/json" }],
+            "url": "{{base_url}}/public/contact-us"
+          }
+        },
+        {
+          "name": "Submit Contact Enquiry",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Accept", "value": "application/json" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"contact_enquiry_full_name\": \"Ravi Kumar\",\n  \"contact_enquiry_phone\": \"9876543210\",\n  \"contact_enquiry_email\": \"ravi@example.com\",\n  \"contact_enquiry_subject\": \"Property Enquiry\",\n  \"contact_enquiry_property_reference_id\": \"APRE-001\",\n  \"contact_enquiry_district\": \"Visakhapatnam\",\n  \"contact_enquiry_message\": \"I would like more details about this property listing.\",\n  \"contact_enquiry_consent\": true\n}"
+            },
+            "url": "{{base_url}}/public/contact-enquiries"
+          }
+        },
+        {
           "name": "Support Request",
           "request": {
             "method": "POST",
@@ -398,6 +421,65 @@
               "raw": "{\n  \"support_request_name\": \"Visitor\",\n  \"support_request_email\": \"visitor@example.com\",\n  \"support_request_phone\": \"9876543210\",\n  \"support_request_message\": \"Need help finding a plot.\"\n}"
             },
             "url": "{{base_url}}/public/support"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Module 9 - Property Import",
+      "item": [
+        {
+          "name": "Download Import Template",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": "{{base_url}}/admin/property-import-template"
+          }
+        },
+        {
+          "name": "Upload Property Import",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "property_import_file",
+                  "type": "file",
+                  "src": ""
+                }
+              ]
+            },
+            "url": "{{base_url}}/admin/property-imports"
+          }
+        },
+        {
+          "name": "List Property Imports",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": "{{base_url}}/admin/property-imports?per_page=20&page=1"
+          }
+        },
+        {
+          "name": "Property Import Summary",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{token}}" },
+              { "key": "Accept", "value": "application/json" }
+            ],
+            "url": "{{base_url}}/admin/property-imports/{{property_import_job_id}}"
           }
         }
       ]

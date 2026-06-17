@@ -81,3 +81,14 @@ const mockdataLoginPayload = {
     "user_phone": "9876543210",
     "user_password": "Password@123"
 };
+
+const mockdataContactEnquiryPayload = {
+    "contact_enquiry_full_name": "Ravi Kumar",
+    "contact_enquiry_phone": "9876543210",
+    "contact_enquiry_email": "ravi@example.com",
+    "contact_enquiry_subject": "Property Enquiry",
+    "contact_enquiry_property_reference_id": "APRE-001",
+    "contact_enquiry_district": "Visakhapatnam",
+    "contact_enquiry_message": "I would like more details about this property listing.",
+    "contact_enquiry_consent": true
+};
