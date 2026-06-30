@@ -21,7 +21,7 @@
             "header": [{ "key": "Accept", "value": "application/json" }],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"admin@vizagland.com\",\n  \"password\": \"password\"\n}",
+              "raw": "{\n  \"user_email\": \"admin@vizagland.com\",\n  \"user_password\": \"Password@123\"\n}",
               "options": { "raw": { "language": "json" } }
             },
             "url": "{{base_url}}/auth/login"
@@ -403,7 +403,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"contact_enquiry_full_name\": \"Ravi Kumar\",\n  \"contact_enquiry_phone\": \"9876543210\",\n  \"contact_enquiry_email\": \"ravi@example.com\",\n  \"contact_enquiry_subject\": \"Property Enquiry\",\n  \"contact_enquiry_property_reference_id\": \"APRE-001\",\n  \"contact_enquiry_district\": \"Visakhapatnam\",\n  \"contact_enquiry_message\": \"I would like more details about this property listing.\",\n  \"contact_enquiry_consent\": true\n}"
+              "raw": "{\n  \"contact_enquiry_full_name\": \"Ravi Kumar\",\n  \"contact_enquiry_phone\": \"9876543210\",\n  \"contact_enquiry_email\": \"ravi@example.com\",\n  \"contact_enquiry_subject\": \"Property Enquiry\",\n  \"contact_enquiry_message\": \"I would like more details about this property listing.\",\n  \"contact_enquiry_consent\": true\n}"
             },
             "url": "{{base_url}}/public/contact-enquiries"
           }

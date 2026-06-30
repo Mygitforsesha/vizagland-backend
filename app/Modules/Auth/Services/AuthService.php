@@ -55,6 +55,18 @@ class AuthService
     }
 
     /**
+     * @param  array<string, mixed>  $profileAttributes
+     */
+    public function updateProfileLocation(int $userId, array $profileAttributes): void
+    {
+        if ($profileAttributes === []) {
+            return;
+        }
+
+        $this->userRegistrationRepository->updateProfile($userId, $profileAttributes);
+    }
+
+    /**
      * @param  list<array{user_registration_type_category: string, user_registration_type_value: string}>  $registrationTypes
      */
     private function resolveRole(array $registrationTypes): UserRole
@@ -63,11 +75,14 @@ class AuthService
             ->filter(fn (array $type) => $type['user_registration_type_category'] === RegistrationTypeCategory::Role->value)
             ->pluck('user_registration_type_value');
 
-        if ($roleValues->contains(RegistrationTypeValue::Agent->value)) {
+        $normalizedRoleValues = $roleValues
+            ->map(static fn (mixed $value): string => strtolower(trim((string) $value)));
+
+        if ($normalizedRoleValues->contains(RegistrationTypeValue::Agent->value)) {
             return UserRole::Agent;
         }
 
-        if ($roleValues->contains(RegistrationTypeValue::Employee->value)) {
+        if ($normalizedRoleValues->contains(RegistrationTypeValue::Employee->value)) {
             return UserRole::Employee;
         }
 

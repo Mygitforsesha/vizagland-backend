@@ -14,6 +14,11 @@ class CreatePropertyRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        $this->preparePropertyUploadsForValidation();
+    }
+
     /**
      * @return array<string, mixed>
      */

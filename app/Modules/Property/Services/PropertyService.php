@@ -16,7 +16,6 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use RuntimeException;
 use Throwable;
@@ -27,6 +26,7 @@ class PropertyService
         private readonly PropertyRepository $propertyRepository,
         private readonly NotificationService $notificationService,
         private readonly ActivityLogService $activityLogService,
+        private readonly PropertyMediaStorage $propertyMediaStorage,
     ) {}
 
     /**
@@ -351,7 +351,7 @@ class PropertyService
     private function storeImagesForProperties(array $properties, array $images, array &$uploadedPaths): int
     {
         foreach ($images as $index => $image) {
-            $path = $image->store('properties/images', 'public');
+            $path = $this->propertyMediaStorage->storeImage($image);
             $uploadedPaths[] = $path;
 
             $imageAttributes = [
@@ -378,7 +378,7 @@ class PropertyService
     private function storeDocumentsForProperties(array $properties, array $documents, array &$uploadedPaths): int
     {
         foreach ($documents as $document) {
-            $path = $document->store('properties/documents', 'public');
+            $path = $this->propertyMediaStorage->storeDocument($document);
             $uploadedPaths[] = $path;
 
             $documentAttributes = [
@@ -459,7 +459,7 @@ class PropertyService
     private function cleanupUploadedFiles(array $uploadedPaths): void
     {
         foreach ($uploadedPaths as $path) {
-            Storage::disk('public')->delete($path);
+            $this->propertyMediaStorage->delete($path);
         }
     }
 }

@@ -17,6 +17,11 @@ class ProfileSettingsProfileResource extends JsonResource
         return [
             'user_dob' => $this->user_dob?->format('Y-m-d'),
             'user_gender' => $this->user_gender?->value,
+            'user_latitude' => $this->user_latitude,
+            'user_longitude' => $this->user_longitude,
+            'user_road' => $this->user_road,
+            'user_colony' => $this->user_colony,
+            'user_suburb' => $this->user_suburb,
             'user_village' => $this->user_village,
             'user_nearby_location' => $this->user_nearby_location,
             'user_custom_nearby_location' => $this->user_custom_nearby_location,
@@ -26,6 +31,10 @@ class ProfileSettingsProfileResource extends JsonResource
             'user_gvmc_zone_ward_number' => $this->user_gvmc_zone_ward_number,
             'user_vmrda' => $this->user_vmrda,
             'user_registration_area' => $this->user_registration_area,
+            'user_gvmc_vmrda' => $this->user_gvmc_vmrda,
+            'user_state' => $this->user_state,
+            'user_pincode' => $this->user_pincode,
+            'user_country' => $this->user_country,
             'user_authority' => $this->user_authority,
         ];
     }

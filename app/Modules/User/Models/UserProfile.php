@@ -19,6 +19,11 @@ class UserProfile extends Model
         'user_id',
         'user_dob',
         'user_gender',
+        'user_latitude',
+        'user_longitude',
+        'user_road',
+        'user_colony',
+        'user_suburb',
         'user_village',
         'user_nearby_location',
         'user_custom_nearby_location',
@@ -28,6 +33,10 @@ class UserProfile extends Model
         'user_gvmc_zone_ward_number',
         'user_vmrda',
         'user_registration_area',
+        'user_gvmc_vmrda',
+        'user_state',
+        'user_pincode',
+        'user_country',
         'user_authority',
     ];
 
@@ -36,6 +45,8 @@ class UserProfile extends Model
         return [
             'user_dob' => 'date',
             'user_gender' => UserGender::class,
+            'user_latitude' => 'decimal:7',
+            'user_longitude' => 'decimal:7',
         ];
     }
 

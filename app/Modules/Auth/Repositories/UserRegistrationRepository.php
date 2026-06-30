@@ -50,4 +50,15 @@ class UserRegistrationRepository
     {
         return User::query()->where('user_email', $email)->first();
     }
+
+    /**
+     * @param  array<string, mixed>  $attributes
+     */
+    public function updateProfile(int $userId, array $attributes): UserProfile
+    {
+        return UserProfile::query()->updateOrCreate(
+            ['user_id' => $userId],
+            $attributes,
+        );
+    }
 }

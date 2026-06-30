@@ -3,6 +3,8 @@
 namespace App\Modules\Property\Requests\Concerns;
 
 use App\Modules\PropertyFieldConfiguration\Services\PropertyFieldConfigurationService;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Validation\Rule;
 
 trait ValidatesPropertyCreatePayload
 {
@@ -89,14 +91,20 @@ trait ValidatesPropertyCreatePayload
             'property_details.property_plot_no' => ['nullable', 'string', 'max:100'],
             'property_details.property_year' => ['nullable', 'integer', 'min:1900', 'max:'.(date('Y') + 5)],
             'property_details.property_bedrooms' => ['nullable', 'integer', 'min:0', 'max:50'],
+            'property_details.property_flat_door_no' => ['nullable', 'string', 'max:100'],
 
             'property_owner' => ['nullable', 'array'],
             'property_owner.property_owner_name' => ['nullable', 'string', 'max:255'],
             'property_owner.property_owner_phone' => ['nullable', 'string', 'max:20'],
-            'property_owner.property_owner_email' => ['nullable', 'email', 'max:255'],
+            'property_owner.property_owner_email' => ['nullable', 'string', 'max:255', Rule::when(
+                fn (): bool => filled(data_get($this->input('property_owner'), 'property_owner_email')),
+                ['email'],
+            )],
 
             'property_other_services' => ['nullable', 'array'],
             'property_other_services.property_service_name' => ['nullable', 'string', 'max:255'],
+            'property_other_services.property_youtube_video_link' => ['nullable', 'string', 'max:2048'],
+            'property_other_services.property_location_link' => ['nullable', 'string', 'max:2048'],
 
             'property_images' => ['nullable', 'array', 'max:30'],
             'property_images.*' => ['file', 'mimes:jpg,jpeg,png,webp', 'max:10240'],
@@ -129,6 +137,18 @@ trait ValidatesPropertyCreatePayload
 
         if ($serviceName !== null && $serviceName !== '') {
             $attributes['property_other_service_name'] = $serviceName;
+        }
+
+        $youtubeLink = data_get($this->input('property_other_services'), 'property_youtube_video_link');
+
+        if ($youtubeLink !== null && $youtubeLink !== '') {
+            $attributes['property_youtube_video_link'] = $youtubeLink;
+        }
+
+        $locationLink = data_get($this->input('property_other_services'), 'property_location_link');
+
+        if ($locationLink !== null && $locationLink !== '') {
+            $attributes['property_location_link'] = $locationLink;
         }
 
         return app(PropertyFieldConfigurationService::class)
@@ -180,6 +200,7 @@ trait ValidatesPropertyCreatePayload
                 'property_plot_no',
                 'property_year',
                 'property_bedrooms',
+                'property_flat_door_no',
             ],
             'property_owner' => [
                 'property_owner_name',
@@ -187,5 +208,55 @@ trait ValidatesPropertyCreatePayload
                 'property_owner_email',
             ],
         ];
+    }
+
+    /**
+     * @return list<UploadedFile>
+     */
+    public function propertyImages(): array
+    {
+        return $this->normalizeUploadedFiles($this->file('property_images'));
+    }
+
+    /**
+     * @return list<UploadedFile>
+     */
+    public function propertyDocuments(): array
+    {
+        return $this->normalizeUploadedFiles($this->file('property_documents'));
+    }
+
+    /**
+     * @return list<UploadedFile>
+     */
+    protected function normalizeUploadedFiles(mixed $files): array
+    {
+        if ($files === null) {
+            return [];
+        }
+
+        if ($files instanceof UploadedFile) {
+            return [$files];
+        }
+
+        if (! is_array($files)) {
+            return [];
+        }
+
+        return array_values(array_filter(
+            $files,
+            static fn (mixed $file): bool => $file instanceof UploadedFile,
+        ));
+    }
+
+    protected function preparePropertyUploadsForValidation(): void
+    {
+        foreach (['property_images', 'property_documents'] as $field) {
+            $files = $this->file($field);
+
+            if ($files instanceof UploadedFile) {
+                $this->files->set($field, [$files]);
+            }
+        }
     }
 }

@@ -7,6 +7,8 @@ use Illuminate\Validation\Rule;
 
 trait MapsUserProfileAttributes
 {
+    use MapsUserLocationAttributes;
+
     protected function prepareProfileValidation(): void
     {
         $gender = $this->input('user_gender');
@@ -26,20 +28,11 @@ trait MapsUserProfileAttributes
     {
         $prefix = $partial ? 'sometimes' : 'nullable';
 
-        return [
+        return array_merge([
             'user_dob' => [$prefix, 'date', 'before:today'],
             'user_gender' => [$prefix, 'string', Rule::in(UserGender::values())],
-            'user_village' => [$prefix, 'string', 'max:255'],
-            'user_nearby_location' => [$prefix, 'string', 'max:255'],
-            'user_custom_nearby_location' => [$prefix, 'string', 'max:255'],
-            'user_district' => [$prefix, 'string', 'max:255'],
-            'user_mandal' => [$prefix, 'string', 'max:255'],
-            'user_panchayati' => [$prefix, 'string', 'max:255'],
-            'user_gvmc_zone_ward_number' => [$prefix, 'string', 'max:255'],
-            'user_vmrda' => [$prefix, 'string', 'max:255'],
-            'user_registration_area' => [$prefix, 'string', 'max:255'],
             'user_authority' => [$prefix, 'string', 'max:255'],
-        ];
+        ], $this->locationFieldRules($prefix));
     }
 
     /**
@@ -50,16 +43,8 @@ trait MapsUserProfileAttributes
         $fields = [
             'user_dob',
             'user_gender',
-            'user_village',
-            'user_nearby_location',
-            'user_custom_nearby_location',
-            'user_district',
-            'user_mandal',
-            'user_panchayati',
-            'user_gvmc_zone_ward_number',
-            'user_vmrda',
-            'user_registration_area',
             'user_authority',
+            ...$this->locationFieldNames(),
         ];
 
         $attributes = [];

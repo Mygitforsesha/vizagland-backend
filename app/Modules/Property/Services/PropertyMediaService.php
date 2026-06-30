@@ -9,7 +9,6 @@ use App\Modules\Property\Repositories\PropertyRepository;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 use RuntimeException;
 use Throwable;
 
@@ -22,6 +21,7 @@ class PropertyMediaService
     public function __construct(
         private readonly PropertyRepository $propertyRepository,
         private readonly PropertyMediaRepository $propertyMediaRepository,
+        private readonly PropertyMediaStorage $propertyMediaStorage,
     ) {}
 
     public function uploadImage(int $propertyId, UploadedFile $image): PropertyImage
@@ -38,7 +38,7 @@ class PropertyMediaService
                     throw new RuntimeException('Maximum of '.self::MAX_IMAGES.' images allowed per property.');
                 }
 
-                $uploadedPath = $image->store('properties/images', 'public');
+                $uploadedPath = $this->propertyMediaStorage->storeImage($image);
 
                 return $this->propertyMediaRepository->createImage($propertyId, [
                     'property_image_path' => $uploadedPath,
@@ -50,7 +50,7 @@ class PropertyMediaService
             });
         } catch (Throwable $exception) {
             if ($uploadedPath !== null) {
-                Storage::disk('public')->delete($uploadedPath);
+                $this->propertyMediaStorage->delete($uploadedPath);
             }
 
             throw $exception;
@@ -71,7 +71,7 @@ class PropertyMediaService
                     throw new RuntimeException('Maximum of '.self::MAX_DOCUMENTS.' documents allowed per property.');
                 }
 
-                $uploadedPath = $document->store('properties/documents', 'public');
+                $uploadedPath = $this->propertyMediaStorage->storeDocument($document);
 
                 return $this->propertyMediaRepository->createDocument($propertyId, [
                     'property_document_original_name' => $document->getClientOriginalName(),
@@ -82,7 +82,7 @@ class PropertyMediaService
             });
         } catch (Throwable $exception) {
             if ($uploadedPath !== null) {
-                Storage::disk('public')->delete($uploadedPath);
+                $this->propertyMediaStorage->delete($uploadedPath);
             }
 
             throw $exception;
@@ -107,9 +107,7 @@ class PropertyMediaService
             $path = $image->property_image_path;
             $this->propertyMediaRepository->deleteImage($image);
 
-            if ($path !== null) {
-                Storage::disk('public')->delete($path);
-            }
+            $this->propertyMediaStorage->delete($path);
         });
     }
 
@@ -131,9 +129,7 @@ class PropertyMediaService
             $path = $document->property_document_path;
             $this->propertyMediaRepository->deleteDocument($document);
 
-            if ($path !== null) {
-                Storage::disk('public')->delete($path);
-            }
+            $this->propertyMediaStorage->delete($path);
         });
     }
 

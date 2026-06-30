@@ -74,6 +74,11 @@ class AuthController extends Controller
 
         $user->update(['user_last_login_at' => now()]);
 
+        $this->authService->updateProfileLocation(
+            userId: $user->user_id,
+            profileAttributes: $request->locationProfileAttributes(),
+        );
+
         $this->activityLogService->log(
             type: ActivityLogType::Authentication,
             action: 'login',
@@ -87,7 +92,7 @@ class AuthController extends Controller
 
         return $this->successResponse(
             data: [
-                'user' => new UserResource($user->fresh()),
+                'user' => new UserResource($user->fresh(['profile'])),
                 'token' => $token,
                 'token_type' => 'Bearer',
             ],

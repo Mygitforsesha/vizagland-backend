@@ -37,6 +37,11 @@ class ProfileSettingsResource extends JsonResource
         return [
             'user_dob' => null,
             'user_gender' => null,
+            'user_latitude' => null,
+            'user_longitude' => null,
+            'user_road' => null,
+            'user_colony' => null,
+            'user_suburb' => null,
             'user_village' => null,
             'user_nearby_location' => null,
             'user_custom_nearby_location' => null,
@@ -46,6 +51,10 @@ class ProfileSettingsResource extends JsonResource
             'user_gvmc_zone_ward_number' => null,
             'user_vmrda' => null,
             'user_registration_area' => null,
+            'user_gvmc_vmrda' => null,
+            'user_state' => null,
+            'user_pincode' => null,
+            'user_country' => null,
             'user_authority' => null,
         ];
     }

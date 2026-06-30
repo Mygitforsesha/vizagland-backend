@@ -20,5 +20,7 @@ final class HttpStatus
 
     public const UNPROCESSABLE_ENTITY = 422;
 
+    public const SERVICE_UNAVAILABLE = 503;
+
     public const INTERNAL_SERVER_ERROR = 500;
 }

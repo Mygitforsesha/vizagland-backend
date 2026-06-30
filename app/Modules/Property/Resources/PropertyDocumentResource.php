@@ -3,9 +3,9 @@
 namespace App\Modules\Property\Resources;
 
 use App\Modules\Property\Models\PropertyDocument;
+use App\Modules\Property\Services\PropertyMediaStorage;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
-use Illuminate\Support\Facades\Storage;
 
 /**
  * @mixin PropertyDocument
@@ -22,7 +22,7 @@ class PropertyDocumentResource extends JsonResource
             'property_id' => $this->property_id,
             'property_document_original_name' => $this->property_document_original_name,
             'property_document_path' => $this->property_document_path,
-            'property_document_url' => Storage::disk('public')->url($this->property_document_path),
+            'property_document_url' => app(PropertyMediaStorage::class)->url($this->property_document_path),
             'property_document_size' => $this->property_document_size,
             'property_document_mime_type' => $this->property_document_mime_type,
             'created_at' => $this->created_at?->toIso8601String(),

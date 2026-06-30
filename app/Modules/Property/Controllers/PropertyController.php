@@ -103,14 +103,14 @@ class PropertyController extends Controller
             $result = $user !== null
                 ? $this->propertyService->createAuthenticated(
                     data: $request->propertyAttributes(),
-                    images: $request->file('property_images', []),
-                    documents: $request->file('property_documents', []),
+                    images: $request->propertyImages(),
+                    documents: $request->propertyDocuments(),
                     user: $user,
                 )
                 : $this->propertyService->createPublic(
                     data: $request->propertyAttributes(),
-                    images: $request->file('property_images', []),
-                    documents: $request->file('property_documents', []),
+                    images: $request->propertyImages(),
+                    documents: $request->propertyDocuments(),
                 );
 
             return $this->successResponse(
@@ -165,8 +165,8 @@ class PropertyController extends Controller
         try {
             $result = $this->propertyService->createPublic(
                 data: $request->propertyAttributes(),
-                images: $request->file('property_images', []),
-                documents: $request->file('property_documents', []),
+                images: $request->propertyImages(),
+                documents: $request->propertyDocuments(),
             );
 
             return $this->successResponse(

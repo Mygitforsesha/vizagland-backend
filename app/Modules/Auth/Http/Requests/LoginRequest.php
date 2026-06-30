@@ -2,13 +2,21 @@
 
 namespace App\Modules\Auth\Http\Requests;
 
+use App\Modules\User\Requests\Concerns\MapsUserLocationAttributes;
 use Illuminate\Foundation\Http\FormRequest;
 
 class LoginRequest extends FormRequest
 {
+    use MapsUserLocationAttributes;
+
     public function authorize(): bool
     {
         return true;
+    }
+
+    protected function prepareForValidation(): void
+    {
+        $this->normalizeLocationFieldAliases();
     }
 
     /**
@@ -16,11 +24,11 @@ class LoginRequest extends FormRequest
      */
     public function rules(): array
     {
-        return [
+        return array_merge([
             'user_email' => ['required_without:user_phone', 'nullable', 'string', 'email'],
             'user_phone' => ['required_without:user_email', 'nullable', 'string', 'regex:/^[6-9]\d{9}$/'],
             'user_password' => ['required', 'string'],
-        ];
+        ], $this->locationFieldRules());
     }
 
     /**

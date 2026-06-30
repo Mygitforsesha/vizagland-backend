@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Auth\AuthenticationException;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -32,5 +33,22 @@ return Application::configure(basePath: dirname(__DIR__))
                     'message' => 'Unauthenticated.',
                 ], 401);
             }
+        });
+
+        $exceptions->render(function (QueryException $e, Request $request) {
+            if (! $request->is('api/*') && ! $request->expectsJson()) {
+                return null;
+            }
+
+            if (config('app.debug')) {
+                return null;
+            }
+
+            report($e);
+
+            return response()->json([
+                'status' => 'error',
+                'message' => 'A database error occurred. Please try again later.',
+            ], 500);
         });
     })->create();
