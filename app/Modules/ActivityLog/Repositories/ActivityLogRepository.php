@@ -62,7 +62,8 @@ class ActivityLogRepository
      */
     private function filteredQuery(array $filters): Builder
     {
-        $query = ActivityLog::query();
+        $query = ActivityLog::query()
+            ->with(['user.profile']);
 
         if (! empty($filters['activity_log_type'])) {
             $query->where('activity_log_type', $filters['activity_log_type']);
@@ -70,6 +71,18 @@ class ActivityLogRepository
 
         if (! empty($filters['user_id'])) {
             $query->where('activity_log_user_id', $filters['user_id']);
+        }
+
+        if (! empty($filters['activity_log_village'])) {
+            $query->where('activity_log_village', 'like', '%'.$filters['activity_log_village'].'%');
+        }
+
+        if (! empty($filters['activity_log_district'])) {
+            $query->where('activity_log_district', 'like', '%'.$filters['activity_log_district'].'%');
+        }
+
+        if (! empty($filters['activity_log_pincode'])) {
+            $query->where('activity_log_pincode', 'like', '%'.$filters['activity_log_pincode'].'%');
         }
 
         if (! empty($filters['date_from'])) {

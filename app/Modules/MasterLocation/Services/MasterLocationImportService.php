@@ -4,16 +4,25 @@ namespace App\Modules\MasterLocation\Services;
 
 use App\Modules\MasterLocation\Repositories\MasterLocationRepository;
 use RuntimeException;
+use Throwable;
 
 class MasterLocationImportService
 {
-    private const CHUNK_SIZE = 200;
-
     public function __construct(
         private readonly MasterLocationRepository $masterLocationRepository,
     ) {}
 
-    public function importFromCsv(string $path, bool $fresh = false): int
+    /**
+     * @return array{
+     *     total_rows_read:int,
+     *     inserted_rows:int,
+     *     updated_rows:int,
+     *     skipped_duplicate_rows:int,
+     *     skipped_blank_rows:int,
+     *     failed_rows:int
+     * }
+     */
+    public function importFromCsv(string $path, bool $fresh = false): array
     {
         if (! is_readable($path)) {
             throw new RuntimeException("Master location CSV file is not readable: {$path}");
@@ -38,37 +47,51 @@ class MasterLocationImportService
         }
 
         $now = now();
-        $rows = [];
-        $imported = 0;
+        $stats = [
+            'total_rows_read' => 0,
+            'inserted_rows' => 0,
+            'updated_rows' => 0,
+            'skipped_duplicate_rows' => 0,
+            'skipped_blank_rows' => 0,
+            'failed_rows' => 0,
+        ];
 
         while (($record = fgetcsv($handle)) !== false) {
+            $stats['total_rows_read']++;
+
             if ($this->isSkippableRow($record)) {
+                $stats['skipped_blank_rows']++;
+
                 continue;
             }
 
             $mapped = $this->mapCsvRow($record, $now);
 
             if ($mapped === null) {
+                $stats['failed_rows']++;
+
                 continue;
             }
 
-            $rows[] = $mapped;
+            $comparisonAttributes = $this->comparisonAttributes($mapped);
 
-            if (count($rows) >= self::CHUNK_SIZE) {
-                $this->masterLocationRepository->insertMany($rows);
-                $imported += count($rows);
-                $rows = [];
+            if ($this->masterLocationRepository->existsExactRecord($comparisonAttributes)) {
+                $stats['skipped_duplicate_rows']++;
+
+                continue;
+            }
+
+            try {
+                $this->masterLocationRepository->create($mapped);
+                $stats['inserted_rows']++;
+            } catch (Throwable) {
+                $stats['failed_rows']++;
             }
         }
 
         fclose($handle);
 
-        if ($rows !== []) {
-            $this->masterLocationRepository->insertMany($rows);
-            $imported += count($rows);
-        }
-
-        return $imported;
+        return $stats;
     }
 
     /**
@@ -122,5 +145,19 @@ class MasterLocationImportService
         $trimmed = trim($value);
 
         return $trimmed === '' ? null : $trimmed;
+    }
+
+    /**
+     * @param  array<string, mixed>  $mapped
+     * @return array<string, mixed>
+     */
+    private function comparisonAttributes(array $mapped): array
+    {
+        unset(
+            $mapped['master_location_created_at'],
+            $mapped['master_location_updated_at'],
+        );
+
+        return $mapped;
     }
 }

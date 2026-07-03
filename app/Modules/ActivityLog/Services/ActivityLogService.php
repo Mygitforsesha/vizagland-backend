@@ -9,6 +9,7 @@ use App\Modules\User\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Throwable;
 
 class ActivityLogService
 {
@@ -33,6 +34,7 @@ class ActivityLogService
         $request = $this->resolveRequest();
 
         $typeValue = $type instanceof ActivityLogType ? $type->value : $type;
+        $locationSnapshot = $this->resolveLocationSnapshot($resolvedUser);
 
         return $this->activityLogRepository->create([
             'activity_log_user_id' => $resolvedUser?->user_id,
@@ -45,6 +47,7 @@ class ActivityLogService
             'activity_log_entity_id' => $entityId,
             'activity_log_ip_address' => $request?->ip(),
             'activity_log_user_agent' => $request?->userAgent(),
+            ...$locationSnapshot,
             'activity_log_metadata' => $metadata,
         ]);
     }
@@ -79,5 +82,41 @@ class ActivityLogService
         $request = request();
 
         return $request instanceof Request ? $request : null;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function resolveLocationSnapshot(?User $user): array
+    {
+        if ($user === null) {
+            return [];
+        }
+
+        try {
+            $profile = $user->relationLoaded('profile')
+                ? $user->profile
+                : $user->profile()->first();
+        } catch (Throwable) {
+            return [];
+        }
+
+        if ($profile === null) {
+            return [];
+        }
+
+        return [
+            'activity_log_latitude' => $profile->user_latitude,
+            'activity_log_longitude' => $profile->user_longitude,
+            'activity_log_road' => $profile->user_road,
+            'activity_log_colony' => $profile->user_colony,
+            'activity_log_suburb' => $profile->user_suburb,
+            'activity_log_village' => $profile->user_village,
+            'activity_log_mandal' => $profile->user_mandal,
+            'activity_log_district' => $profile->user_district,
+            'activity_log_state' => $profile->user_state,
+            'activity_log_pincode' => $profile->user_pincode,
+            'activity_log_country' => $profile->user_country,
+        ];
     }
 }

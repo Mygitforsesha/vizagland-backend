@@ -29,7 +29,7 @@ class ImportMasterLocationsCommand extends Command
 
         try {
             $this->masterLocationSetupService->ensureTableExists();
-            $imported = $this->masterLocationImportService->importFromCsv(
+            $stats = $this->masterLocationImportService->importFromCsv(
                 path: $path,
                 fresh: $fresh,
             );
@@ -39,7 +39,12 @@ class ImportMasterLocationsCommand extends Command
             return self::FAILURE;
         }
 
-        $this->info("Imported {$imported} master location record(s).");
+        $this->info("Total rows read: {$stats['total_rows_read']}");
+        $this->info("Inserted rows: {$stats['inserted_rows']}");
+        $this->info("Updated rows: {$stats['updated_rows']}");
+        $this->info("Skipped duplicate rows: {$stats['skipped_duplicate_rows']}");
+        $this->info("Skipped blank rows: {$stats['skipped_blank_rows']}");
+        $this->info("Failed rows: {$stats['failed_rows']}");
 
         return self::SUCCESS;
     }

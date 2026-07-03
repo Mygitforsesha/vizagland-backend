@@ -21,11 +21,14 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::get('properties/{property_id}', [PropertyController::class, 'show']);
 });
 
+Route::middleware(['auth:sanctum', 'role:employee,agent,admin,super_admin'])->group(function (): void {
+    Route::post('properties/{property_id}/images', [PropertyMediaController::class, 'uploadImage']);
+    Route::post('properties/{property_id}/documents', [PropertyMediaController::class, 'uploadDocument']);
+});
+
 Route::middleware(['auth:sanctum', 'role:employee,agent'])->group(function (): void {
     Route::put('properties/{property_id}', [PropertyController::class, 'update']);
     Route::post('properties/{property_id}/submit-for-review', [PropertyController::class, 'submitForReview']);
-    Route::post('properties/{property_id}/images', [PropertyMediaController::class, 'uploadImage']);
-    Route::post('properties/{property_id}/documents', [PropertyMediaController::class, 'uploadDocument']);
 });
 
 Route::middleware(['auth:sanctum', 'role:employee,agent,admin,super_admin'])->group(function (): void {
@@ -36,6 +39,7 @@ Route::middleware(['auth:sanctum', 'role:employee,agent,admin,super_admin'])->gr
 Route::middleware(['auth:sanctum', 'role:admin,super_admin'])->group(function (): void {
     Route::get('admin/properties', [AdminPropertyController::class, 'index']);
     Route::get('admin/properties/{property_id}', [AdminPropertyController::class, 'show']);
+    Route::put('admin/properties/{property_id}', [AdminPropertyController::class, 'update']);
     Route::post('admin/properties/{property_id}/approve', [AdminPropertyActionController::class, 'approve']);
     Route::post('admin/properties/{property_id}/reject', [AdminPropertyActionController::class, 'reject']);
     Route::post('admin/properties/{property_id}/archive', [AdminPropertyActionController::class, 'archive']);

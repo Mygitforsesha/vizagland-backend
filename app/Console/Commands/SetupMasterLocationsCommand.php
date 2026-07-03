@@ -37,8 +37,15 @@ class SetupMasterLocationsCommand extends Command
             $this->info('master_locations table already exists.');
         }
 
-        if ($result['imported'] > 0) {
-            $this->info("Imported {$result['imported']} master location record(s).");
+        $stats = $result['import_stats'];
+
+        if ($stats['total_rows_read'] > 0) {
+            $this->info("Total rows read: {$stats['total_rows_read']}");
+            $this->info("Inserted rows: {$stats['inserted_rows']}");
+            $this->info("Updated rows: {$stats['updated_rows']}");
+            $this->info("Skipped duplicate rows: {$stats['skipped_duplicate_rows']}");
+            $this->info("Skipped blank rows: {$stats['skipped_blank_rows']}");
+            $this->info("Failed rows: {$stats['failed_rows']}");
         } else {
             $this->info('No import was needed; master location data is already present.');
         }

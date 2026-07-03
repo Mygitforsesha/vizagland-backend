@@ -47,7 +47,18 @@ class MasterLocationSetupService
     }
 
     /**
-     * @return array{table_created: bool, imported: int, total: int}
+     * @return array{
+     *     table_created: bool,
+     *     import_stats: array{
+     *         total_rows_read:int,
+     *         inserted_rows:int,
+     *         updated_rows:int,
+     *         skipped_duplicate_rows:int,
+     *         skipped_blank_rows:int,
+     *         failed_rows:int
+     *     },
+     *     total: int
+     * }
      */
     public function setup(bool $freshImport = false): array
     {
@@ -55,11 +66,18 @@ class MasterLocationSetupService
 
         $this->ensureTableExists();
 
-        $imported = 0;
+        $importStats = [
+            'total_rows_read' => 0,
+            'inserted_rows' => 0,
+            'updated_rows' => 0,
+            'skipped_duplicate_rows' => 0,
+            'skipped_blank_rows' => 0,
+            'failed_rows' => 0,
+        ];
 
         if ($freshImport || ! $this->hasData()) {
             $path = base_path('docs/village_master.csv');
-            $imported = $this->masterLocationImportService->importFromCsv(
+            $importStats = $this->masterLocationImportService->importFromCsv(
                 path: $path,
                 fresh: $freshImport,
             );
@@ -67,7 +85,7 @@ class MasterLocationSetupService
 
         return [
             'table_created' => $tableCreated,
-            'imported' => $imported,
+            'import_stats' => $importStats,
             'total' => $this->masterLocationRepository->count(),
         ];
     }

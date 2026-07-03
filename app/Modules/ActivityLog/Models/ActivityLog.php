@@ -31,6 +31,17 @@ class ActivityLog extends Model
         'activity_log_entity_id',
         'activity_log_ip_address',
         'activity_log_user_agent',
+        'activity_log_latitude',
+        'activity_log_longitude',
+        'activity_log_road',
+        'activity_log_colony',
+        'activity_log_suburb',
+        'activity_log_village',
+        'activity_log_mandal',
+        'activity_log_district',
+        'activity_log_state',
+        'activity_log_pincode',
+        'activity_log_country',
         'activity_log_metadata',
         'activity_log_created_at',
     ];
@@ -40,6 +51,8 @@ class ActivityLog extends Model
         return [
             'activity_log_type' => ActivityLogType::class,
             'activity_log_metadata' => 'array',
+            'activity_log_latitude' => 'decimal:7',
+            'activity_log_longitude' => 'decimal:7',
             'activity_log_created_at' => 'datetime',
         ];
     }
@@ -80,5 +93,119 @@ class ActivityLog extends Model
             'system.form_field_disabled' => 'Form Field Disabled',
             default => ucwords(str_replace('_', ' ', $this->activity_log_action)),
         };
+    }
+
+    public function locationLabel(): ?string
+    {
+        $segments = $this->resolvedLocationSegments();
+
+        if ($segments === []) {
+            return null;
+        }
+
+        return implode(', ', $segments);
+    }
+
+    public function googleMapsUrl(): ?string
+    {
+        $latitude = $this->resolvedLocationValue('latitude');
+        $longitude = $this->resolvedLocationValue('longitude');
+
+        if ($latitude === null || $longitude === null) {
+            return null;
+        }
+
+        return "https://www.google.com/maps?q={$latitude},{$longitude}";
+    }
+
+    public function locationSource(): ?string
+    {
+        if ($this->hasLocationSnapshot()) {
+            return 'activity_snapshot';
+        }
+
+        return $this->fallbackProfile() !== null ? 'user_current_location' : null;
+    }
+
+    public function resolvedLocationValue(string $field): mixed
+    {
+        if ($this->hasLocationSnapshot()) {
+            return $this->getAttribute('activity_log_'.$field);
+        }
+
+        $profile = $this->fallbackProfile();
+
+        return $profile?->getAttribute('user_'.$field);
+    }
+
+    public function hasLocationSnapshot(): bool
+    {
+        foreach ($this->snapshotFields() as $field) {
+            $value = $this->getAttribute('activity_log_'.$field);
+
+            if (is_string($value) && trim($value) !== '') {
+                return true;
+            }
+
+            if ($value !== null && ! is_string($value)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function resolvedLocationSegments(): array
+    {
+        return collect([
+            $this->resolvedLocationValue('road'),
+            $this->resolvedLocationValue('colony'),
+            $this->resolvedLocationValue('suburb'),
+            $this->resolvedLocationValue('village'),
+            $this->resolvedLocationValue('mandal'),
+            $this->resolvedLocationValue('district'),
+            $this->resolvedLocationValue('state'),
+            $this->resolvedLocationValue('pincode'),
+            $this->resolvedLocationValue('country'),
+        ])
+            ->filter(static fn (mixed $value): bool => is_string($value) && trim($value) !== '')
+            ->map(static fn (mixed $value): string => trim((string) $value))
+            ->unique(static fn (string $value): string => mb_strtolower($value))
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function snapshotFields(): array
+    {
+        return [
+            'latitude',
+            'longitude',
+            'road',
+            'colony',
+            'suburb',
+            'village',
+            'mandal',
+            'district',
+            'state',
+            'pincode',
+            'country',
+        ];
+    }
+
+    private function fallbackProfile(): ?\App\Modules\User\Models\UserProfile
+    {
+        $user = $this->relationLoaded('user') ? $this->user : null;
+
+        if ($user === null) {
+            return null;
+        }
+
+        return $user->relationLoaded('profile') ? $user->profile : null;
     }
 }

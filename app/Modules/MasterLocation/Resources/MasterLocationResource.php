@@ -17,6 +17,7 @@ class MasterLocationResource extends JsonResource
         return [
             'id' => $this->master_location_id,
             'village' => $this->master_location_village,
+            'display_label' => $this->displayLabel(),
             'nearby_location' => $this->master_location_nearby_location ?? '',
             'additional_nearby_location' => $this->master_location_additional_nearby_location ?? '',
             'district' => $this->master_location_district ?? '',
@@ -29,5 +30,22 @@ class MasterLocationResource extends JsonResource
             'authority' => $this->master_location_authority ?? '',
             'custom_nearby_location' => null,
         ];
+    }
+
+    private function displayLabel(): string
+    {
+        $parts = collect([
+            $this->master_location_village,
+            $this->master_location_panchayati,
+            $this->master_location_mandal,
+            $this->master_location_district,
+        ])
+            ->filter(static fn (mixed $value): bool => is_string($value) && trim($value) !== '')
+            ->map(static fn (mixed $value): string => trim((string) $value))
+            ->unique(static fn (string $value): string => mb_strtolower($value))
+            ->values()
+            ->all();
+
+        return implode(', ', $parts);
     }
 }

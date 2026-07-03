@@ -32,6 +32,17 @@ class MasterLocationRepository
         return MasterLocation::query()->count();
     }
 
+    /**
+     * @param  array<string, mixed>  $attributes
+     */
+    public function existsExactRecord(array $attributes): bool
+    {
+        return $this->applyExactAttributeFilters(
+            MasterLocation::query(),
+            $attributes,
+        )->exists();
+    }
+
     public function search(string $term, int $limit, ?int $page = null): Collection|LengthAwarePaginator
     {
         $query = MasterLocation::query()
@@ -60,10 +71,38 @@ class MasterLocationRepository
     }
 
     /**
+     * @param  array<string, mixed>  $attributes
+     */
+    public function create(array $attributes): MasterLocation
+    {
+        return MasterLocation::query()->create($attributes);
+    }
+
+    /**
      * @param  list<array<string, mixed>>  $rows
      */
     public function insertMany(array $rows): void
     {
         MasterLocation::query()->insert($rows);
+    }
+
+    /**
+     * @param  Builder<MasterLocation>  $query
+     * @param  array<string, mixed>  $attributes
+     * @return Builder<MasterLocation>
+     */
+    private function applyExactAttributeFilters(Builder $query, array $attributes): Builder
+    {
+        foreach ($attributes as $column => $value) {
+            if ($value === null) {
+                $query->whereNull($column);
+
+                continue;
+            }
+
+            $query->where($column, $value);
+        }
+
+        return $query;
     }
 }
