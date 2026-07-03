@@ -17,6 +17,20 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Public Web Root
+    |--------------------------------------------------------------------------
+    |
+    | On shared hosting (e.g. GoDaddy cPanel) the HTTP document root is often
+    | outside Laravel's public/ directory. Set PUBLIC_WEB_ROOT in production
+    | to the folder that serves https://api.example.com (e.g. public_html/api).
+    | When unset, DOCUMENT_ROOT is used for web requests; public/ is used locally.
+    |
+    */
+
+    'public_web_root' => env('PUBLIC_WEB_ROOT'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Filesystem Disks
     |--------------------------------------------------------------------------
     |
@@ -33,7 +47,7 @@ return [
         'local' => [
             'driver' => 'local',
             'root' => storage_path('app/private'),
-            'serve' => true,
+            'serve' => false,
             'throw' => false,
             'report' => false,
         ],

@@ -37,6 +37,7 @@ class RegisteredUserResource extends JsonResource
             'user_other_roles' => $this->registrationTypeValues(RegistrationTypeCategory::Other),
             'user_latitude' => $this->profile?->user_latitude,
             'user_longitude' => $this->profile?->user_longitude,
+            'user_google_maps_url' => $this->googleMapsUrl(),
             'user_road' => $this->profile?->user_road,
             'user_colony' => $this->profile?->user_colony,
             'user_suburb' => $this->profile?->user_suburb,
@@ -80,5 +81,17 @@ class RegisteredUserResource extends JsonResource
         $values = $this->registrationTypeValues($category);
 
         return $values[0] ?? null;
+    }
+
+    private function googleMapsUrl(): ?string
+    {
+        $latitude = $this->profile?->user_latitude;
+        $longitude = $this->profile?->user_longitude;
+
+        if ($latitude === null || $longitude === null || $latitude === '' || $longitude === '') {
+            return null;
+        }
+
+        return "https://www.google.com/maps?q={$latitude},{$longitude}";
     }
 }

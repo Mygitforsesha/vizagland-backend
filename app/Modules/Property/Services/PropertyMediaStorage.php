@@ -2,6 +2,7 @@
 
 namespace App\Modules\Property\Services;
 
+use App\Support\PublicWebRoot;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 
@@ -37,6 +38,12 @@ class PropertyMediaStorage
 
         Storage::disk(self::DISK)->delete($path);
         Storage::disk(self::LEGACY_DISK)->delete($path);
+
+        $legacyPublicPath = $this->absolutePathForRoot(public_path('storage'), $path);
+
+        if (is_file($legacyPublicPath)) {
+            unlink($legacyPublicPath);
+        }
     }
 
     public function url(?string $path): ?string
@@ -50,9 +57,22 @@ class PropertyMediaStorage
         return Storage::disk(self::DISK)->url($path);
     }
 
+    public function resolveAbsolutePath(string $path): ?string
+    {
+        $this->ensureAccessibleFromPublicWebRoot($path);
+
+        foreach ($this->candidateAbsolutePaths($path) as $absolutePath) {
+            if (is_file($absolutePath)) {
+                return $absolutePath;
+            }
+        }
+
+        return null;
+    }
+
     public function publicRoot(): string
     {
-        return Storage::disk(self::DISK)->path('');
+        return PublicWebRoot::storagePath();
     }
 
     private function ensureDirectoriesExist(): void
@@ -63,23 +83,47 @@ class PropertyMediaStorage
 
     private function ensureAccessibleFromPublicWebRoot(string $path): void
     {
-        if (Storage::disk(self::DISK)->exists($path)) {
+        $target = $this->absolutePathForRoot(PublicWebRoot::storagePath(), $path);
+
+        if (is_file($target)) {
             return;
         }
 
-        if (! Storage::disk(self::LEGACY_DISK)->exists($path)) {
+        foreach ($this->candidateAbsolutePaths($path) as $source) {
+            if (! is_file($source) || $source === $target) {
+                continue;
+            }
+
+            $directory = dirname($target);
+
+            if (! is_dir($directory)) {
+                mkdir($directory, 0755, true);
+            }
+
+            copy($source, $target);
+
             return;
         }
+    }
 
-        $directory = dirname($path);
+    /**
+     * @return list<string>
+     */
+    private function candidateAbsolutePaths(string $path): array
+    {
+        $normalizedPath = ltrim(str_replace('\\', '/', $path), '/');
 
-        if ($directory !== '.' && $directory !== '') {
-            Storage::disk(self::DISK)->makeDirectory($directory);
-        }
+        return array_values(array_unique([
+            $this->absolutePathForRoot(PublicWebRoot::storagePath(), $normalizedPath),
+            $this->absolutePathForRoot(public_path('storage'), $normalizedPath),
+            $this->absolutePathForRoot(storage_path('app/public'), $normalizedPath),
+        ]));
+    }
 
-        Storage::disk(self::DISK)->put(
-            $path,
-            Storage::disk(self::LEGACY_DISK)->get($path),
-        );
+    private function absolutePathForRoot(string $root, string $path): string
+    {
+        $normalizedPath = ltrim(str_replace('\\', '/', $path), '/');
+
+        return rtrim($root, '/\\').DIRECTORY_SEPARATOR.str_replace('/', DIRECTORY_SEPARATOR, $normalizedPath);
     }
 }
