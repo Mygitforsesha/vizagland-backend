@@ -4,6 +4,7 @@ namespace App\Modules\Property\Repositories;
 
 use App\Modules\Property\Enums\PropertyRecordType;
 use App\Modules\Property\Models\Property;
+use App\Modules\Property\Models\PropertyContactNumber;
 use App\Modules\Property\Models\PropertyDocument;
 use App\Modules\Property\Models\PropertyImage;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -37,6 +38,7 @@ class PropertyRepository
                 'vizaglandCopy',
                 'images' => fn ($query) => $query->orderBy('property_image_sort_order'),
                 'documents' => fn ($query) => $query->orderBy('created_at'),
+                'contactNumbers' => fn ($query) => $query->orderBy('property_contact_number_id'),
             ])
             ->where('property_id', $propertyId)
             ->first();
@@ -140,6 +142,17 @@ class PropertyRepository
     public function createDocument(int $propertyId, array $attributes): PropertyDocument
     {
         return PropertyDocument::query()->create([
+            'property_id' => $propertyId,
+            ...$attributes,
+        ]);
+    }
+
+    /**
+     * @param  array<string, mixed>  $attributes
+     */
+    public function createContactNumber(int $propertyId, array $attributes): PropertyContactNumber
+    {
+        return PropertyContactNumber::query()->create([
             'property_id' => $propertyId,
             ...$attributes,
         ]);

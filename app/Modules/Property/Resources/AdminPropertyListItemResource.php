@@ -3,6 +3,7 @@
 namespace App\Modules\Property\Resources;
 
 use App\Modules\Property\Models\Property;
+use App\Modules\User\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -43,6 +44,39 @@ class AdminPropertyListItemResource extends JsonResource
             'property_is_featured' => $this->property_is_featured,
             'property_review_remarks' => $this->property_review_remarks,
             'property_approved_at' => $this->property_approved_at?->toIso8601String(),
+            'property_cadre' => $this->cadrePayload(),
         ];
+    }
+
+    /**
+     * @return array{property_posted_by: ?string, property_posted_phone_number: ?string}
+     */
+    private function cadrePayload(): array
+    {
+        $poster = $this->resolvePosterUser();
+
+        return [
+            'property_posted_by' => $poster?->user_full_name,
+            'property_posted_phone_number' => $poster?->user_phone,
+        ];
+    }
+
+    private function resolvePosterUser(): ?User
+    {
+        if ($this->relationLoaded('createdBy') && $this->createdBy !== null) {
+            return $this->createdBy;
+        }
+
+        if (! $this->isVizaglandCopy()) {
+            return null;
+        }
+
+        $parent = $this->relationLoaded('parentProperty') ? $this->parentProperty : null;
+
+        if ($parent !== null && $parent->relationLoaded('createdBy') && $parent->createdBy !== null) {
+            return $parent->createdBy;
+        }
+
+        return null;
     }
 }

@@ -40,6 +40,11 @@ class Property extends Model
         'property_area_unit',
         'property_bedrooms',
         'property_lp_no',
+        'property_project_name',
+        'property_block_phase',
+        'property_document_no',
+        'property_document_year',
+        'property_registration_office_area',
         'property_year',
         'property_plot_no',
         'property_ownership_type',
@@ -66,6 +71,7 @@ class Property extends Model
         'property_other_service_name',
         'property_youtube_video_link',
         'property_location_link',
+        'property_registration_type',
         'property_approval_authority',
         'property_village',
         'property_nearby_location',
@@ -133,6 +139,7 @@ class Property extends Model
             'property_area' => 'decimal:2',
             'property_bedrooms' => 'integer',
             'property_year' => 'integer',
+            'property_document_year' => 'integer',
             'property_ownership_type' => PropertyOwnershipType::class,
             'property_bathrooms' => 'integer',
             'property_parking' => 'integer',
@@ -162,6 +169,11 @@ class Property extends Model
     public function documents(): HasMany
     {
         return $this->hasMany(PropertyDocument::class, 'property_id', 'property_id');
+    }
+
+    public function contactNumbers(): HasMany
+    {
+        return $this->hasMany(PropertyContactNumber::class, 'property_id', 'property_id');
     }
 
     public function reviews(): HasMany

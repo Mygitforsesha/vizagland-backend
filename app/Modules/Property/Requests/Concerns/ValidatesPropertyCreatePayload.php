@@ -23,10 +23,20 @@ trait ValidatesPropertyCreatePayload
             'property_updated_at',
             'property_record_type',
             'property_parent_property_id',
+            'property_is_featured',
             'property_view_count',
             'property_lead_count',
+            'property_is_deleted',
             'property_approved_at',
             'property_approved_by_user_id',
+            'property_rejected_at',
+            'property_rejected_by_user_id',
+            'property_archived_at',
+            'property_archived_by_user_id',
+            'property_restored_at',
+            'property_restored_by_user_id',
+            'property_resolved_at',
+            'property_resolved_by_user_id',
             'property_metadata',
             'property_metadata.property_is_featured',
             'property_metadata.property_view_count',
@@ -52,6 +62,8 @@ trait ValidatesPropertyCreatePayload
         }
 
         $rules = array_merge($rules, [
+            'registration_type' => ['nullable', 'string', 'max:255'],
+
             'property_approval' => ['nullable', 'array'],
             'property_approval.property_approval_authority' => ['nullable', 'string', 'max:255'],
 
@@ -76,22 +88,35 @@ trait ValidatesPropertyCreatePayload
             'property_group_and_types.property_construction_type' => ['nullable', 'string', 'max:255'],
 
             'property_details' => ['nullable', 'array'],
-            'property_details.property_price' => ['nullable', 'numeric', 'min:0'],
-            'property_details.property_price_range' => ['nullable', 'string', 'max:255'],
+            'property_details.property_project_name' => ['nullable', 'string', 'max:255'],
+            'property_details.property_lp_no' => ['nullable', 'string', 'max:100'],
+            'property_details.property_year' => ['nullable', 'integer', 'min:1900', 'max:'.(date('Y') + 5)],
+            'property_details.property_total_floors' => ['nullable', 'integer', 'min:0', 'max:200'],
+            'property_details.property_block_phase' => ['nullable', 'string', 'max:100'],
+            'property_details.property_plot_no' => ['nullable', 'string', 'max:100'],
+            'property_details.property_floor_number' => ['nullable', 'string', 'max:50'],
+            'property_details.property_facing' => ['nullable', 'string', 'max:255'],
             'property_details.property_area' => ['nullable', 'numeric', 'min:0'],
             'property_details.property_area_unit' => ['nullable', 'string', 'max:50'],
-            'property_details.property_price_per_sqft' => ['nullable', 'string', 'max:255'],
+            'property_details.property_price' => ['nullable', 'numeric', 'min:0'],
+            'property_details.property_price_range' => ['nullable', 'string', 'max:255'],
             'property_details.property_age' => ['nullable', 'string', 'max:255'],
-            'property_details.property_facing' => ['nullable', 'string', 'max:255'],
-            'property_details.property_total_floors' => ['nullable', 'integer', 'min:0', 'max:200'],
-            'property_details.property_floor_number' => ['nullable', 'string', 'max:50'],
+            'property_details.property_bedrooms' => ['nullable', 'integer', 'min:0', 'max:50'],
             'property_details.property_furnishing' => ['nullable', 'string', 'max:255'],
             'property_details.property_under' => ['nullable', 'string', 'max:255'],
-            'property_details.property_lp_no' => ['nullable', 'string', 'max:100'],
-            'property_details.property_plot_no' => ['nullable', 'string', 'max:100'],
-            'property_details.property_year' => ['nullable', 'integer', 'min:1900', 'max:'.(date('Y') + 5)],
-            'property_details.property_bedrooms' => ['nullable', 'integer', 'min:0', 'max:50'],
+            'property_details.property_document_no' => ['nullable', 'string', 'max:100'],
+            'property_details.property_document_year' => ['nullable', 'integer', 'min:1900', 'max:'.(date('Y') + 5)],
+            'property_details.property_registration_office_area' => ['nullable', 'string', 'max:255'],
+            'property_details.property_price_per_sqft' => ['nullable', 'string', 'max:255'],
             'property_details.property_flat_door_no' => ['nullable', 'string', 'max:100'],
+
+            'property_auth' => ['nullable', 'array'],
+            'property_auth.username_or_mobile' => ['nullable', 'string', 'max:255'],
+            'property_auth.password' => ['nullable', 'string', 'max:255'],
+            'property_auth.email' => ['nullable', 'string', 'max:255', Rule::when(
+                fn (): bool => filled(data_get($this->input('property_auth'), 'email')),
+                ['email'],
+            )],
 
             'property_owner' => ['nullable', 'array'],
             'property_owner.property_owner_name' => ['nullable', 'string', 'max:255'],
@@ -103,8 +128,18 @@ trait ValidatesPropertyCreatePayload
 
             'property_other_services' => ['nullable', 'array'],
             'property_other_services.property_service_name' => ['nullable', 'string', 'max:255'],
-            'property_other_services.property_youtube_video_link' => ['nullable', 'string', 'max:2048'],
-            'property_other_services.property_location_link' => ['nullable', 'string', 'max:2048'],
+            'property_other_services.property_youtube_video_link' => ['nullable', 'string', 'max:2048', Rule::when(
+                fn (): bool => filled(data_get($this->input('property_other_services'), 'property_youtube_video_link')),
+                ['url'],
+            )],
+            'property_other_services.property_location_link' => ['nullable', 'string', 'max:2048', Rule::when(
+                fn (): bool => filled(data_get($this->input('property_other_services'), 'property_location_link')),
+                ['url'],
+            )],
+
+            'property_contact_numbers' => ['nullable', 'array'],
+            'property_contact_numbers.*.registration_type' => ['nullable', 'string', 'max:255'],
+            'property_contact_numbers.*.phone_number' => ['nullable', 'string', 'max:20'],
 
             'property_images' => ['nullable', 'array', 'max:30'],
             'property_images.*' => ['file', 'mimes:jpg,jpeg,png,webp', 'max:10240'],
@@ -122,6 +157,12 @@ trait ValidatesPropertyCreatePayload
     public function propertyAttributes(): array
     {
         $attributes = [];
+
+        $registrationType = $this->input('registration_type');
+
+        if ($registrationType !== null && $registrationType !== '') {
+            $attributes['property_registration_type'] = $registrationType;
+        }
 
         foreach ($this->propertyCreateFieldMap() as $group => $fields) {
             foreach ($fields as $field) {
@@ -156,6 +197,48 @@ trait ValidatesPropertyCreatePayload
     }
 
     /**
+     * @return list<array{property_contact_number_registration_type: ?string, property_contact_number_phone_number: ?string}>
+     */
+    public function propertyContactNumbers(): array
+    {
+        $items = $this->input('property_contact_numbers');
+
+        if (! is_array($items)) {
+            return [];
+        }
+
+        $contactNumbers = [];
+
+        foreach ($items as $item) {
+            if (! is_array($item)) {
+                continue;
+            }
+
+            $registrationType = $item['registration_type'] ?? null;
+            $phoneNumber = $item['phone_number'] ?? null;
+
+            if ($registrationType === '') {
+                $registrationType = null;
+            }
+
+            if ($phoneNumber === '') {
+                $phoneNumber = null;
+            }
+
+            if ($registrationType === null && $phoneNumber === null) {
+                continue;
+            }
+
+            $contactNumbers[] = [
+                'property_contact_number_registration_type' => $registrationType,
+                'property_contact_number_phone_number' => $phoneNumber,
+            ];
+        }
+
+        return $contactNumbers;
+    }
+
+    /**
      * @return array<string, list<string>>
      */
     protected function propertyCreateFieldMap(): array
@@ -185,21 +268,26 @@ trait ValidatesPropertyCreatePayload
                 'property_construction_type',
             ],
             'property_details' => [
-                'property_price',
-                'property_price_range',
+                'property_project_name',
+                'property_lp_no',
+                'property_year',
+                'property_total_floors',
+                'property_block_phase',
+                'property_plot_no',
+                'property_floor_number',
+                'property_facing',
                 'property_area',
                 'property_area_unit',
-                'property_price_per_sqft',
+                'property_price',
+                'property_price_range',
                 'property_age',
-                'property_facing',
-                'property_total_floors',
-                'property_floor_number',
+                'property_bedrooms',
                 'property_furnishing',
                 'property_under',
-                'property_lp_no',
-                'property_plot_no',
-                'property_year',
-                'property_bedrooms',
+                'property_document_no',
+                'property_document_year',
+                'property_registration_office_area',
+                'property_price_per_sqft',
                 'property_flat_door_no',
             ],
             'property_owner' => [
@@ -258,5 +346,34 @@ trait ValidatesPropertyCreatePayload
                 $this->files->set($field, [$files]);
             }
         }
+    }
+
+    protected function preparePropertyPayloadForValidation(): void
+    {
+        $this->preparePropertyUploadsForValidation();
+
+        $payload = $this->normalizeEmptyStringsToNull($this->all());
+        $this->replace($payload);
+    }
+
+    /**
+     * @param  array<string, mixed>  $values
+     * @return array<string, mixed>
+     */
+    protected function normalizeEmptyStringsToNull(array $values): array
+    {
+        $normalized = [];
+
+        foreach ($values as $key => $value) {
+            if (is_array($value)) {
+                $normalized[$key] = $this->normalizeEmptyStringsToNull($value);
+
+                continue;
+            }
+
+            $normalized[$key] = $value === '' ? null : $value;
+        }
+
+        return $normalized;
     }
 }

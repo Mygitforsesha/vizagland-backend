@@ -16,7 +16,7 @@ class CreatePublicPropertyRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
-        $this->preparePropertyUploadsForValidation();
+        $this->preparePropertyPayloadForValidation();
     }
 
     /**

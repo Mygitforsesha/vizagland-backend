@@ -163,13 +163,14 @@ class PropertyService
      *     documents_count: int
      * }
      */
-    public function createAuthenticated(array $data, array $images, array $documents, User $user): array
+    public function createAuthenticated(array $data, array $images, array $documents, User $user, array $contactNumbers = []): array
     {
         return $this->createPropertyPair(
             $data,
             $images,
             $documents,
             $this->resolveCreatorContext($user),
+            contactNumbers: $contactNumbers,
         );
     }
 
@@ -185,9 +186,15 @@ class PropertyService
      *     documents_count: int
      * }
      */
-    public function createPublic(array $data, array $images, array $documents): array
+    public function createPublic(array $data, array $images, array $documents, array $contactNumbers = []): array
     {
-        return $this->createPropertyPair($data, $images, $documents, $this->resolvePublicCreatorContext());
+        return $this->createPropertyPair(
+            $data,
+            $images,
+            $documents,
+            $this->resolvePublicCreatorContext(),
+            contactNumbers: $contactNumbers,
+        );
     }
 
     /**
@@ -232,12 +239,13 @@ class PropertyService
         array $creatorContext,
         bool $sendNotifications = true,
         bool $logActivity = true,
+        array $contactNumbers = [],
     ): array
     {
         $uploadedPaths = [];
 
         try {
-            $result = DB::transaction(function () use ($data, $images, $documents, $creatorContext, &$uploadedPaths) {
+            $result = DB::transaction(function () use ($data, $images, $documents, $creatorContext, $contactNumbers, &$uploadedPaths) {
                 $referenceId = $this->generatePropertyReferenceId();
                 $baseAttributes = $this->buildPropertyAttributes($data, $creatorContext, $referenceId);
 
@@ -262,10 +270,14 @@ class PropertyService
                     $documents,
                     $uploadedPaths,
                 );
+                $this->storeContactNumbersForProperties(
+                    [$originalProperty, $vizaglandCopyProperty],
+                    $contactNumbers,
+                );
 
                 $result = [
-                    'original_property' => $originalProperty->fresh(['images', 'documents']),
-                    'vizagland_copy_property' => $vizaglandCopyProperty->fresh(['images', 'documents']),
+                    'original_property' => $originalProperty->fresh(['images', 'documents', 'contactNumbers']),
+                    'vizagland_copy_property' => $vizaglandCopyProperty->fresh(['images', 'documents', 'contactNumbers']),
                     'property_reference_id' => $referenceId,
                     'images_count' => $imagesCount,
                     'documents_count' => $documentsCount,
@@ -394,6 +406,23 @@ class PropertyService
         }
 
         return count($documents);
+    }
+
+    /**
+     * @param  list<Property>  $properties
+     * @param  list<array{property_contact_number_registration_type: ?string, property_contact_number_phone_number: ?string}>  $contactNumbers
+     */
+    private function storeContactNumbersForProperties(array $properties, array $contactNumbers): void
+    {
+        if ($contactNumbers === []) {
+            return;
+        }
+
+        foreach ($properties as $property) {
+            foreach ($contactNumbers as $contactNumber) {
+                $this->propertyRepository->createContactNumber($property->property_id, $contactNumber);
+            }
+        }
     }
 
     /**

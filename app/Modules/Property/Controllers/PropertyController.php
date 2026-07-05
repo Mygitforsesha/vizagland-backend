@@ -106,11 +106,13 @@ class PropertyController extends Controller
                     images: $request->propertyImages(),
                     documents: $request->propertyDocuments(),
                     user: $user,
+                    contactNumbers: $request->propertyContactNumbers(),
                 )
                 : $this->propertyService->createPublic(
                     data: $request->propertyAttributes(),
                     images: $request->propertyImages(),
                     documents: $request->propertyDocuments(),
+                    contactNumbers: $request->propertyContactNumbers(),
                 );
 
             return $this->successResponse(
@@ -167,6 +169,7 @@ class PropertyController extends Controller
                 data: $request->propertyAttributes(),
                 images: $request->propertyImages(),
                 documents: $request->propertyDocuments(),
+                contactNumbers: $request->propertyContactNumbers(),
             );
 
             return $this->successResponse(

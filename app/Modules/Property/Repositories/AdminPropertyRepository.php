@@ -40,6 +40,11 @@ class AdminPropertyRepository
                 'property_approved_at',
                 'created_at',
                 'updated_at',
+            ])
+            ->with([
+                'createdBy:user_id,user_full_name,user_phone',
+                'parentProperty:property_id,property_created_by',
+                'parentProperty.createdBy:user_id,user_full_name,user_phone',
             ]);
 
         $this->applyFilters($query, $filters);
@@ -62,6 +67,7 @@ class AdminPropertyRepository
                 'resolvedBy',
                 'images' => fn ($query) => $query->orderBy('property_image_sort_order'),
                 'documents' => fn ($query) => $query->orderBy('created_at'),
+                'contactNumbers' => fn ($query) => $query->orderBy('property_contact_number_id'),
             ])
             ->where('property_id', $propertyId)
             ->first();

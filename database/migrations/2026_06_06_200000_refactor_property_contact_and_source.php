@@ -56,11 +56,17 @@ return new class extends Migration
         });
 
         Schema::table('properties', function (Blueprint $table) {
-            if (Schema::hasColumn('properties', 'property_contact_type')) {
+            if (
+                Schema::hasColumn('properties', 'property_contact_type')
+                && ! Schema::hasIndex('properties', 'properties_property_contact_type_index')
+            ) {
                 $table->index('property_contact_type');
             }
 
-            if (Schema::hasColumn('properties', 'property_source')) {
+            if (
+                Schema::hasColumn('properties', 'property_source')
+                && ! Schema::hasIndex('properties', 'properties_property_source_index')
+            ) {
                 $table->index('property_source');
             }
         });
