@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::prefix('public')->group(function (): void {
     Route::get('advertisements', [PublicAdvertisementController::class, 'index']);
+    Route::get('advertisements/{advertisement_id}', [PublicAdvertisementController::class, 'show']);
 });
 
 Route::middleware(['auth:sanctum', 'role:admin,super_admin'])->group(function (): void {

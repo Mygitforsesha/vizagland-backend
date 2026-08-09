@@ -3,6 +3,7 @@
 namespace App\Modules\Advertisement\Models;
 
 use App\Modules\Advertisement\Enums\AdvertisementType;
+use App\Modules\MasterLocation\Models\MasterLocation;
 use App\Modules\User\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -30,6 +31,7 @@ class Advertisement extends Model
         'advertisement_start_date',
         'advertisement_end_date',
         'advertisement_is_active',
+        'advertisement_village_id',
         'advertisement_created_by_user_id',
     ];
 
@@ -41,11 +43,17 @@ class Advertisement extends Model
             'advertisement_start_date' => 'date',
             'advertisement_end_date' => 'date',
             'advertisement_is_active' => 'boolean',
+            'advertisement_village_id' => 'integer',
         ];
     }
 
     public function createdBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'advertisement_created_by_user_id', 'user_id');
+    }
+
+    public function village(): BelongsTo
+    {
+        return $this->belongsTo(MasterLocation::class, 'advertisement_village_id', 'master_location_id');
     }
 }

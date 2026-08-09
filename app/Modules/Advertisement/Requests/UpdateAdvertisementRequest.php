@@ -28,6 +28,8 @@ class UpdateAdvertisementRequest extends FormRequest
             'advertisement_start_date' => ['nullable', 'date'],
             'advertisement_end_date' => ['nullable', 'date', 'after_or_equal:advertisement_start_date'],
             'advertisement_is_active' => ['sometimes', 'boolean'],
+            'advertisement_village_id' => ['nullable', 'integer', Rule::exists('master_locations', 'master_location_id')],
+            'village_id' => ['nullable', 'integer', Rule::exists('master_locations', 'master_location_id')],
         ];
     }
 
@@ -68,6 +70,11 @@ class UpdateAdvertisementRequest extends FormRequest
 
         if ($this->has('advertisement_is_active')) {
             $attributes['advertisement_is_active'] = $this->boolean('advertisement_is_active');
+        }
+
+        if ($this->has('advertisement_village_id') || $this->has('village_id')) {
+            $villageId = $this->input('advertisement_village_id') ?? $this->input('village_id');
+            $attributes['advertisement_village_id'] = $villageId ? (int) $villageId : null;
         }
 
         return $attributes;

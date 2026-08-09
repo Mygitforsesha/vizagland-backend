@@ -28,6 +28,13 @@ class AdvertisementResource extends JsonResource
             'advertisement_start_date' => $this->advertisement_start_date?->toDateString(),
             'advertisement_end_date' => $this->advertisement_end_date?->toDateString(),
             'advertisement_is_active' => $this->advertisement_is_active,
+            'advertisement_village_id' => $this->advertisement_village_id,
+            'village' => $this->village ? [
+                'master_location_id' => $this->village->master_location_id,
+                'master_location_village' => $this->village->master_location_village,
+                'master_location_mandal' => $this->village->master_location_mandal,
+                'master_location_district' => $this->village->master_location_district,
+            ] : null,
             'advertisement_created_by_user_id' => $this->advertisement_created_by_user_id,
             'advertisement_created_at' => $this->advertisement_created_at?->toIso8601String(),
             'advertisement_updated_at' => $this->advertisement_updated_at?->toIso8601String(),

@@ -36,6 +36,25 @@ class AdvertisementService
         return $this->advertisementRepository->listActivePublic($filters);
     }
 
+    /**
+     * @return array{village_wise_ads: Collection<int, Advertisement>, general_ads: Collection<int, Advertisement>, latest_ads: Collection<int, Advertisement>}
+     */
+    public function listPublicSections(): array
+    {
+        return $this->advertisementRepository->getPublicSections();
+    }
+
+    public function showPublic(int $advertisementId): Advertisement
+    {
+        $advertisement = $this->advertisementRepository->findActivePublicById($advertisementId);
+
+        if ($advertisement === null) {
+            throw (new ModelNotFoundException)->setModel(Advertisement::class, [$advertisementId]);
+        }
+
+        return $advertisement;
+    }
+
     public function show(int $advertisementId): Advertisement
     {
         $advertisement = $this->advertisementRepository->findById($advertisementId);

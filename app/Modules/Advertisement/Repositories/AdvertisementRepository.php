@@ -16,6 +16,7 @@ class AdvertisementRepository
     public function paginateAdmin(array $filters, int $perPage): LengthAwarePaginator
     {
         $query = Advertisement::query()
+            ->with('village')
             ->orderBy('advertisement_display_order')
             ->orderByDesc('advertisement_id');
 
@@ -30,16 +31,8 @@ class AdvertisementRepository
      */
     public function listActivePublic(array $filters): Collection
     {
-        $query = Advertisement::query()
-            ->where('advertisement_is_active', true)
-            ->where(function (Builder $builder): void {
-                $builder->whereNull('advertisement_start_date')
-                    ->orWhereDate('advertisement_start_date', '<=', Carbon::today());
-            })
-            ->where(function (Builder $builder): void {
-                $builder->whereNull('advertisement_end_date')
-                    ->orWhereDate('advertisement_end_date', '>=', Carbon::today());
-            })
+        $query = $this->activePublicQuery()
+            ->with('village')
             ->orderBy('advertisement_display_order')
             ->orderByDesc('advertisement_id');
 
@@ -50,9 +43,50 @@ class AdvertisementRepository
         return $query->get();
     }
 
+    /**
+     * @return array{village_wise_ads: Collection<int, Advertisement>, general_ads: Collection<int, Advertisement>, latest_ads: Collection<int, Advertisement>}
+     */
+    public function getPublicSections(): array
+    {
+        $villageWiseAds = $this->activePublicQuery()
+            ->whereNotNull('advertisement_village_id')
+            ->with('village')
+            ->orderBy('advertisement_display_order')
+            ->orderByDesc('advertisement_id')
+            ->get();
+
+        $generalAds = $this->activePublicQuery()
+            ->whereNull('advertisement_village_id')
+            ->with('village')
+            ->orderBy('advertisement_display_order')
+            ->orderByDesc('advertisement_id')
+            ->get();
+
+        $latestAds = $this->activePublicQuery()
+            ->with('village')
+            ->orderByDesc('advertisement_id')
+            ->get();
+
+        return [
+            'village_wise_ads' => $villageWiseAds,
+            'general_ads' => $generalAds,
+            'latest_ads' => $latestAds,
+        ];
+    }
+
+    public function findActivePublicById(int $advertisementId): ?Advertisement
+    {
+        return $this->activePublicQuery()
+            ->where('advertisement_id', $advertisementId)
+            ->with('village')
+            ->first();
+    }
+
     public function findById(int $advertisementId): ?Advertisement
     {
-        return Advertisement::query()->find($advertisementId);
+        return Advertisement::query()
+            ->with('village')
+            ->find($advertisementId);
     }
 
     /**
@@ -60,7 +94,9 @@ class AdvertisementRepository
      */
     public function create(array $attributes): Advertisement
     {
-        return Advertisement::query()->create($attributes);
+        $advertisement = Advertisement::query()->create($attributes);
+
+        return $advertisement->fresh('village');
     }
 
     /**
@@ -70,12 +106,31 @@ class AdvertisementRepository
     {
         $advertisement->update($attributes);
 
-        return $advertisement->fresh();
+        return $advertisement->fresh('village');
     }
 
     public function delete(Advertisement $advertisement): void
     {
         $advertisement->delete();
+    }
+
+    /**
+     * Build the base active/published query scope.
+     *
+     * @return Builder<Advertisement>
+     */
+    private function activePublicQuery(): Builder
+    {
+        return Advertisement::query()
+            ->where('advertisement_is_active', true)
+            ->where(function (Builder $builder): void {
+                $builder->whereNull('advertisement_start_date')
+                    ->orWhereDate('advertisement_start_date', '<=', Carbon::today());
+            })
+            ->where(function (Builder $builder): void {
+                $builder->whereNull('advertisement_end_date')
+                    ->orWhereDate('advertisement_end_date', '>=', Carbon::today());
+            });
     }
 
     /**
