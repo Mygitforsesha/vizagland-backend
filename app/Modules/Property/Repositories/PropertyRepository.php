@@ -9,6 +9,7 @@ use App\Modules\Property\Models\PropertyDocument;
 use App\Modules\Property\Models\PropertyImage;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Pagination\LengthAwarePaginator as Paginator;
 
 class PropertyRepository
 {
@@ -54,10 +55,13 @@ class PropertyRepository
                 'property_id',
                 'property_reference_id',
                 'property_title',
+                'property_type',
                 'property_status',
                 'property_source',
                 'property_price',
                 'property_city',
+                'property_owner_name',
+                'property_is_featured',
                 'created_at',
             ])
             ->where('property_record_type', PropertyRecordType::VizaglandCopy)
@@ -68,6 +72,45 @@ class PropertyRepository
         $query->orderBy('created_at', $sort === 'oldest' ? 'asc' : 'desc');
 
         return $query->paginate($perPage);
+    }
+
+    public function paginateByCreator(?int $userId, string $phoneNumber, int $perPage, string $sort): LengthAwarePaginator
+    {
+        $query = Property::query()
+            ->with([
+                'createdBy:user_id,user_full_name,user_phone',
+                'parentProperty:property_id,property_reference_id,property_record_type,property_created_by',
+                'vizaglandCopy:property_id,property_parent_property_id,property_reference_id,property_record_type',
+                'images' => fn ($builder) => $builder->orderBy('property_image_sort_order'),
+                'documents' => fn ($builder) => $builder->orderBy('created_at'),
+                'contactNumbers' => fn ($builder) => $builder->orderBy('property_contact_number_id'),
+            ])
+            ->withCount(['images', 'documents'])
+            ->where('property_record_type', PropertyRecordType::VizaglandCopy)
+            ->where(function ($builder) use ($userId, $phoneNumber): void {
+                $builder->where('property_owner_phone', $phoneNumber);
+
+                if ($userId !== null) {
+                    $builder->orWhere('property_created_by', $userId);
+                }
+            });
+
+        $query->orderBy('created_at', $sort === 'oldest' ? 'asc' : 'desc');
+
+        return $query->paginate($perPage);
+    }
+
+    public function paginateEmpty(int $perPage): LengthAwarePaginator
+    {
+        return new Paginator(
+            items: [],
+            total: 0,
+            perPage: $perPage,
+            currentPage: 1,
+            options: [
+                'path' => Paginator::resolveCurrentPath(),
+            ],
+        );
     }
 
     /**

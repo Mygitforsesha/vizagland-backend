@@ -30,6 +30,14 @@ class PublicPropertyController extends Controller
         );
     }
 
+    public function browseLand(): JsonResponse
+    {
+        return $this->successResponse(
+            data: $this->publicPropertyService->browseLand(),
+            message: 'Browse area data retrieved successfully.',
+        );
+    }
+
     public function show(int $property_id): JsonResponse
     {
         try {

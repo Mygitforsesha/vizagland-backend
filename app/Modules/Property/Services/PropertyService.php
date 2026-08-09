@@ -11,6 +11,7 @@ use App\Modules\Property\Enums\PropertySource;
 use App\Modules\Property\Enums\PropertyStatus;
 use App\Modules\Property\Models\Property;
 use App\Modules\Property\Repositories\PropertyRepository;
+use App\Modules\User\Enums\UserRole;
 use App\Modules\User\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -37,6 +38,20 @@ class PropertyService
         return $this->propertyRepository->paginate($filters, $perPage, $sort);
     }
 
+    public function listMyPropertiesByPhone(string $phoneNumber, int $perPage, string $sort): LengthAwarePaginator
+    {
+        $userId = User::query()
+            ->where('user_phone', $phoneNumber)
+            ->value('user_id');
+
+        return $this->propertyRepository->paginateByCreator(
+            userId: $userId !== null ? (int) $userId : null,
+            phoneNumber: $phoneNumber,
+            perPage: $perPage,
+            sort: $sort,
+        );
+    }
+
     public function show(int $propertyId, User $user): Property
     {
         $property = $this->propertyRepository->findByIdWithDetails($propertyId);
@@ -60,13 +75,9 @@ class PropertyService
             throw new RuntimeException('You do not have permission to view this property.');
         }
 
+        // Employees and agents can open any Vizagland copy detail (same visibility as list).
         if ($user->isEmployee() || $user->isAgent()) {
-            $isCreator = $property->property_created_by === $user->user_id;
-            $isAssignee = $property->property_assigned_user_id === $user->user_id;
-
-            if ($isCreator || $isAssignee) {
-                return;
-            }
+            return;
         }
 
         throw new RuntimeException('You do not have permission to view this property.');
@@ -178,15 +189,23 @@ class PropertyService
      * @param  array<string, mixed>  $data
      * @param  list<UploadedFile>  $images
      * @param  list<UploadedFile>  $documents
+     * @param  array{username_or_mobile: string, password: string, email: ?string}|null  $authCredentials
      * @return array{
      *     original_property: Property,
      *     vizagland_copy_property: Property,
      *     property_reference_id: string,
      *     images_count: int,
-     *     documents_count: int
+     *     documents_count: int,
+     *     username_or_mobile?: string
      * }
      */
-    public function createPublic(array $data, array $images, array $documents, array $contactNumbers = []): array
+    public function createPublic(
+        array $data,
+        array $images,
+        array $documents,
+        array $contactNumbers = [],
+        ?array $authCredentials = null,
+    ): array
     {
         return $this->createPropertyPair(
             $data,
@@ -194,6 +213,7 @@ class PropertyService
             $documents,
             $this->resolvePublicCreatorContext(),
             contactNumbers: $contactNumbers,
+            authCredentials: $authCredentials,
         );
     }
 
@@ -224,12 +244,14 @@ class PropertyService
      * @param  list<UploadedFile>  $images
      * @param  list<UploadedFile>  $documents
      * @param  array{property_created_by_type: PropertyCreatedByType, property_created_by_id: ?int, property_created_by: ?int, property_source: PropertySource}  $creatorContext
+     * @param  array{username_or_mobile: string, password: string, email: ?string}|null  $authCredentials
      * @return array{
      *     original_property: Property,
      *     vizagland_copy_property: Property,
      *     property_reference_id: string,
      *     images_count: int,
-     *     documents_count: int
+     *     documents_count: int,
+     *     username_or_mobile?: string
      * }
      */
     private function createPropertyPair(
@@ -240,12 +262,13 @@ class PropertyService
         bool $sendNotifications = true,
         bool $logActivity = true,
         array $contactNumbers = [],
+        ?array $authCredentials = null,
     ): array
     {
         $uploadedPaths = [];
 
         try {
-            $result = DB::transaction(function () use ($data, $images, $documents, $creatorContext, $contactNumbers, &$uploadedPaths) {
+            $result = DB::transaction(function () use ($data, $images, $documents, $creatorContext, $contactNumbers, $authCredentials, &$uploadedPaths) {
                 $referenceId = $this->generatePropertyReferenceId();
                 $baseAttributes = $this->buildPropertyAttributes($data, $creatorContext, $referenceId);
 
@@ -283,6 +306,24 @@ class PropertyService
                     'documents_count' => $documentsCount,
                 ];
 
+                $authResult = $this->ensurePublicUserFromAuth($authCredentials, $data);
+
+                if ($authResult !== null) {
+                    $result['username_or_mobile'] = $authResult['username_or_mobile'];
+                }
+
+                $creatorUserId = $this->resolveLinkablePosterUserId($authResult, $data);
+
+                if ($creatorUserId !== null) {
+                    $this->attachPublicCreatorToProperties(
+                        [$originalProperty, $vizaglandCopyProperty],
+                        $creatorUserId,
+                    );
+
+                    $result['original_property'] = $originalProperty->fresh(['images', 'documents', 'contactNumbers']);
+                    $result['vizagland_copy_property'] = $vizaglandCopyProperty->fresh(['images', 'documents', 'contactNumbers']);
+                }
+
                 return $result;
             });
         } catch (Throwable $exception) {
@@ -309,6 +350,106 @@ class PropertyService
         }
 
         return $result;
+    }
+
+    /**
+     * Create a public_user from property_auth when mobile + password are present.
+     * If the phone already exists, skip create (do not disturb existing accounts) and still return the mobile.
+     * Returns user_id when the account is (or becomes) a public_user or agent so properties can be linked.
+     *
+     * @param  array{username_or_mobile: string, password: string, email: ?string}|null  $authCredentials
+     * @param  array<string, mixed>  $propertyData
+     * @return array{username_or_mobile: string, user_id: ?int}|null
+     */
+    private function ensurePublicUserFromAuth(?array $authCredentials, array $propertyData): ?array
+    {
+        if ($authCredentials === null) {
+            return null;
+        }
+
+        $mobile = $authCredentials['username_or_mobile'];
+
+        $existing = User::query()->where('user_phone', $mobile)->first();
+
+        if ($existing !== null) {
+            return [
+                'username_or_mobile' => $mobile,
+                'user_id' => $this->isLinkablePosterRole($existing->user_role) ? $existing->user_id : null,
+            ];
+        }
+
+        $email = $authCredentials['email'];
+
+        if ($email !== null && User::query()->where('user_email', $email)->exists()) {
+            $email = null;
+        }
+
+        $ownerName = $propertyData['property_owner_name'] ?? null;
+        $fullName = is_string($ownerName) && trim($ownerName) !== ''
+            ? trim($ownerName)
+            : 'Public User';
+
+        $user = User::query()->create([
+            'user_full_name' => $fullName,
+            'user_phone' => $mobile,
+            'user_email' => $email,
+            'user_password' => $authCredentials['password'],
+            'user_role' => UserRole::PublicUser,
+            'user_is_active' => true,
+        ]);
+
+        return [
+            'username_or_mobile' => $mobile,
+            'user_id' => $user->user_id,
+        ];
+    }
+
+    /**
+     * Resolve which public_user/agent should own a public-posted property.
+     * Prefers property_auth linkage, then falls back to property_owner_phone.
+     *
+     * @param  array{username_or_mobile: string, user_id: ?int}|null  $authResult
+     * @param  array<string, mixed>  $propertyData
+     */
+    private function resolveLinkablePosterUserId(?array $authResult, array $propertyData): ?int
+    {
+        if ($authResult !== null && $authResult['user_id'] !== null) {
+            return $authResult['user_id'];
+        }
+
+        $ownerPhone = $propertyData['property_owner_phone'] ?? null;
+
+        if (! is_string($ownerPhone) || trim($ownerPhone) === '') {
+            return null;
+        }
+
+        $user = User::query()
+            ->where('user_phone', trim($ownerPhone))
+            ->whereIn('user_role', [UserRole::PublicUser, UserRole::Agent])
+            ->where('user_is_active', true)
+            ->first();
+
+        return $user?->user_id;
+    }
+
+    private function isLinkablePosterRole(UserRole $role): bool
+    {
+        return $role === UserRole::PublicUser || $role === UserRole::Agent;
+    }
+
+    /**
+     * Link public-posted properties to the public_user without changing created_by_type (stays Public).
+     *
+     * @param  list<Property>  $properties
+     */
+    private function attachPublicCreatorToProperties(array $properties, int $userId): void
+    {
+        foreach ($properties as $property) {
+            $this->propertyRepository->update($property, [
+                'property_created_by' => $userId,
+                'property_created_by_id' => $userId,
+            ]);
+        }
     }
 
     /**

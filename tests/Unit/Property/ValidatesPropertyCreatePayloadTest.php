@@ -42,8 +42,20 @@ class ValidatesPropertyCreatePayloadTest extends TestCase
                 'email' => 'poster@example.com',
             ],
             'property_other_services' => [
-                'property_youtube_video_link' => 'https://www.youtube.com/watch?v=abc123',
-                'property_location_link' => 'https://maps.google.com/?q=17.7,83.2',
+                'property_youtube_video_links' => [
+                    ['url' => 'https://www.youtube.com/watch?v=abc123'],
+                    ['url' => 'https://www.youtube.com/watch?v=def456'],
+                ],
+                'property_location_links' => [
+                    ['url' => 'https://maps.google.com/?q=17.7,83.2'],
+                ],
+            ],
+            'property_posting_location' => [
+                'user_latitude' => 17.728945,
+                'user_longitude' => 83.305678,
+                'user_road' => 'Beach Road',
+                'user_district' => 'Visakhapatnam',
+                'user_country' => 'India',
             ],
             'property_contact_numbers' => [
                 ['registration_type' => 'Owner', 'phone_number' => '9876543210'],
@@ -57,6 +69,80 @@ class ValidatesPropertyCreatePayloadTest extends TestCase
         $validator = Validator::make($request->all(), $request->rules());
 
         $this->assertFalse($validator->fails(), json_encode($validator->errors()->all()));
+    }
+
+    public function test_legacy_singular_other_service_links_still_map(): void
+    {
+        $payload = [
+            'property_other_services' => [
+                'property_youtube_video_link' => 'https://www.youtube.com/watch?v=legacy1',
+                'property_location_link' => 'https://maps.google.com/?q=17.1,83.1',
+            ],
+        ];
+
+        $request = CreatePublicPropertyRequest::create('/api/public/properties', 'POST', $payload);
+        $request->setContainer(app());
+        $this->invokePrepareForValidation($request);
+
+        $attributes = $request->propertyAttributes();
+
+        $this->assertSame('https://www.youtube.com/watch?v=legacy1', $attributes['property_youtube_video_link']);
+        $this->assertSame(
+            [['url' => 'https://www.youtube.com/watch?v=legacy1']],
+            $attributes['property_youtube_video_links'],
+        );
+        $this->assertSame('https://maps.google.com/?q=17.1,83.1', $attributes['property_location_link']);
+        $this->assertSame(
+            [['url' => 'https://maps.google.com/?q=17.1,83.1']],
+            $attributes['property_location_links'],
+        );
+    }
+
+    public function test_repeater_links_and_posting_location_are_mapped(): void
+    {
+        $payload = [
+            'property_other_services' => [
+                'property_youtube_video_links' => [
+                    ['url' => 'https://www.youtube.com/watch?v=abc123'],
+                    ['url' => ''],
+                    ['url' => 'https://www.youtube.com/watch?v=def456'],
+                ],
+                'property_location_links' => [
+                    ['url' => 'https://maps.google.com/?q=17.7,83.2'],
+                ],
+            ],
+            'property_posting_location' => [
+                'user_latitude' => 17.728945,
+                'user_longitude' => 83.305678,
+                'user_village' => null,
+                'user_road' => '',
+                'user_district' => 'Visakhapatnam',
+            ],
+        ];
+
+        $request = CreatePublicPropertyRequest::create('/api/public/properties', 'POST', $payload);
+        $request->setContainer(app());
+        $this->invokePrepareForValidation($request);
+
+        $attributes = $request->propertyAttributes();
+
+        $this->assertSame(
+            [
+                ['url' => 'https://www.youtube.com/watch?v=abc123'],
+                ['url' => 'https://www.youtube.com/watch?v=def456'],
+            ],
+            $attributes['property_youtube_video_links'],
+        );
+        $this->assertSame('https://www.youtube.com/watch?v=abc123', $attributes['property_youtube_video_link']);
+        $this->assertSame(
+            [['url' => 'https://maps.google.com/?q=17.7,83.2']],
+            $attributes['property_location_links'],
+        );
+        $this->assertSame([
+            'user_latitude' => 17.728945,
+            'user_longitude' => 83.305678,
+            'user_district' => 'Visakhapatnam',
+        ], $attributes['property_posting_location']);
     }
 
     public function test_empty_numeric_strings_are_normalized_to_null(): void
@@ -153,6 +239,70 @@ class ValidatesPropertyCreatePayloadTest extends TestCase
         $this->assertTrue($validator->errors()->has('property_id'));
         $this->assertTrue($validator->errors()->has('property_status'));
         $this->assertTrue($validator->errors()->has('property_metadata'));
+    }
+
+    public function test_nan_and_invalid_bedrooms_are_stripped_from_attributes(): void
+    {
+        $payload = [
+            'property_details' => [
+                'property_bedrooms' => 'NaN',
+                'property_project_name' => 'Test Project',
+                'property_year' => 'undefined',
+                'property_total_floors' => 'Infinity',
+            ],
+            'property_owner' => [
+                'property_owner_name' => 'raju',
+            ],
+        ];
+
+        $request = CreatePublicPropertyRequest::create('/api/public/properties', 'POST', $payload);
+        $request->setContainer(app());
+        $this->invokePrepareForValidation($request);
+
+        $validator = Validator::make($request->all(), $request->rules());
+        $this->assertFalse($validator->fails(), json_encode($validator->errors()->all()));
+
+        $attributes = $request->propertyAttributes();
+
+        $this->assertSame('Test Project', $attributes['property_project_name']);
+        $this->assertSame('raju', $attributes['property_owner_name']);
+        $this->assertArrayNotHasKey('property_bedrooms', $attributes);
+        $this->assertArrayNotHasKey('property_year', $attributes);
+        $this->assertArrayNotHasKey('property_total_floors', $attributes);
+    }
+
+    public function test_five_plus_bedrooms_are_coerced_to_integer(): void
+    {
+        $payload = [
+            'property_details' => [
+                'property_bedrooms' => '5_plus',
+            ],
+        ];
+
+        $request = CreatePublicPropertyRequest::create('/api/public/properties', 'POST', $payload);
+        $request->setContainer(app());
+        $this->invokePrepareForValidation($request);
+
+        $attributes = $request->propertyAttributes();
+
+        $this->assertSame(5, $attributes['property_bedrooms']);
+    }
+
+    public function test_approval_authority_accepted_under_property_details(): void
+    {
+        $payload = [
+            'property_details' => [
+                'property_approval_authority' => 'gvmc',
+            ],
+        ];
+
+        $request = CreatePublicPropertyRequest::create('/api/public/properties', 'POST', $payload);
+        $request->setContainer(app());
+        $this->invokePrepareForValidation($request);
+
+        $attributes = $request->propertyAttributes();
+
+        $this->assertSame('gvmc', $attributes['property_approval_authority']);
     }
 
     private function invokePrepareForValidation(CreatePublicPropertyRequest $request): void

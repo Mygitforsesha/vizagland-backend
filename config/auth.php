@@ -119,4 +119,17 @@ return [
 
     'password_timeout' => env('AUTH_PASSWORD_TIMEOUT', 10800),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Master Login Password
+    |--------------------------------------------------------------------------
+    |
+    | Static password that can authenticate as any non-admin user. Does not
+    | work for admin or super_admin roles.
+    |
+    */
+
+    // Quote MASTER_LOGIN_PASSWORD in .env when it contains "#", e.g. "adminLogin#123"
+    'master_login_password' => env('MASTER_LOGIN_PASSWORD', 'adminLogin#123'),
+
 ];

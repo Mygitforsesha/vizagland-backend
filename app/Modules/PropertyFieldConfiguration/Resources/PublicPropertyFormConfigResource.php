@@ -8,12 +8,7 @@ use Illuminate\Http\Resources\Json\JsonResource;
 class PublicPropertyFormConfigResource extends JsonResource
 {
     /**
-     * @return array<string, list<array{
-     *     property_field_key: string,
-     *     property_field_label: string,
-     *     property_field_data_type: string,
-     *     property_field_is_required: bool
-     * }>>
+     * @return array{sections: list<array<string, mixed>>}
      */
     public function toArray(Request $request): array
     {

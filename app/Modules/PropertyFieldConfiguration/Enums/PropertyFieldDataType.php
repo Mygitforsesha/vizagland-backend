@@ -10,6 +10,7 @@ enum PropertyFieldDataType: string
     case Email = 'email';
     case File = 'file';
     case Select = 'select';
+    case Repeater = 'repeater';
 
     public function label(): string
     {
@@ -20,6 +21,7 @@ enum PropertyFieldDataType: string
             self::Email => 'Email',
             self::File => 'File',
             self::Select => 'Select',
+            self::Repeater => 'Repeater',
         };
     }
 

@@ -3,11 +3,13 @@
 namespace App\Modules\User\Services;
 
 use App\Modules\ActivityLog\Enums\ActivityLogType;
+use App\Modules\ActivityLog\Models\ActivityLog;
 use App\Modules\ActivityLog\Services\ActivityLogService;
 use App\Modules\User\Models\User;
 use App\Modules\User\Repositories\AdminUserRepository;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 class AdminUserService
@@ -34,6 +36,14 @@ class AdminUserService
         }
 
         return $user;
+    }
+
+    /**
+     * @return Collection<int, ActivityLog>
+     */
+    public function loginActivity(int $userId): Collection
+    {
+        return $this->activityLogService->loginActivityForUser($userId);
     }
 
     /**

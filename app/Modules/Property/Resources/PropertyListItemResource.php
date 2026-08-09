@@ -18,11 +18,15 @@ class PropertyListItemResource extends JsonResource
     {
         return [
             'property_id' => $this->property_id,
+            'property_reference_id' => $this->property_reference_id,
             'property_title' => $this->property_title,
+            'property_type' => $this->property_type?->value,
             'property_status' => $this->property_status->value,
             'property_source' => $this->property_source?->value,
             'property_price' => $this->property_price,
             'property_city' => $this->property_city,
+            'property_owner_name' => $this->property_owner_name,
+            'property_is_featured' => $this->property_is_featured,
             'property_created_at' => $this->created_at?->toIso8601String(),
             'images_count' => $this->images_count,
             'documents_count' => $this->documents_count,

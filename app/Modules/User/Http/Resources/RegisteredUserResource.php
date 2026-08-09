@@ -13,11 +13,19 @@ use Illuminate\Http\Resources\Json\JsonResource;
 class RegisteredUserResource extends JsonResource
 {
     /**
+     * @param  list<array<string, mixed>>|null  $loginActivity
+     */
+    public function __construct($resource, private readonly ?array $loginActivity = null)
+    {
+        parent::__construct($resource);
+    }
+
+    /**
      * @return array<string, mixed>
      */
     public function toArray(Request $request): array
     {
-        return [
+        $payload = [
             'user_id' => $this->user_id,
             'user_full_name' => $this->user_full_name,
             'user_email' => $this->user_email,
@@ -58,6 +66,12 @@ class RegisteredUserResource extends JsonResource
             'registration_types' => UserRegistrationTypeResource::collection($this->whenLoaded('registrationTypes')),
             'created_at' => $this->created_at?->toIso8601String(),
         ];
+
+        if ($this->loginActivity !== null) {
+            $payload['login_activity'] = $this->loginActivity;
+        }
+
+        return $payload;
     }
 
     /**

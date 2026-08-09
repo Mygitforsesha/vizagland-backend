@@ -80,14 +80,57 @@ class AdminPropertyRepository
     private function applyFilters(Builder $query, array $filters): void
     {
         if (! empty($filters['search'])) {
-            $search = $filters['search'];
+            $search = trim((string) $filters['search']);
+            $like = '%'.$search.'%';
+            $digits = preg_replace('/\D+/', '', $search) ?? '';
+            $digitLike = $digits !== '' && strlen($digits) >= 5 ? '%'.$digits.'%' : null;
 
-            $query->where(function (Builder $builder) use ($search): void {
-                $builder->where('property_reference_id', 'like', '%'.$search.'%')
-                    ->orWhere('property_owner_name', 'like', '%'.$search.'%')
-                    ->orWhere('property_owner_phone', 'like', '%'.$search.'%')
-                    ->orWhere('property_village', 'like', '%'.$search.'%')
-                    ->orWhere('property_district', 'like', '%'.$search.'%');
+            $query->where(function (Builder $builder) use ($search, $like, $digitLike): void {
+                $builder->where('property_reference_id', 'like', $like)
+                    ->orWhere('property_owner_name', 'like', $like)
+                    ->orWhere('property_owner_phone', 'like', $like)
+                    ->orWhere('property_project_name', 'like', $like)
+                    ->orWhere('property_title', 'like', $like)
+                    ->orWhere('property_contact_name', 'like', $like)
+                    ->orWhere('property_contact_phone', 'like', $like)
+                    ->orWhere('property_lp_no', 'like', $like)
+                    ->orWhere('property_plot_no', 'like', $like)
+                    ->orWhere('property_village', 'like', $like)
+                    ->orWhere('property_district', 'like', $like)
+                    ->orWhereHas('createdBy', function (Builder $userQuery) use ($like, $digitLike): void {
+                        $userQuery->where(function (Builder $nested) use ($like, $digitLike): void {
+                            $nested->where('user_full_name', 'like', $like)
+                                ->orWhere('user_phone', 'like', $like);
+
+                            if ($digitLike !== null) {
+                                $nested->orWhere('user_phone', 'like', $digitLike);
+                            }
+                        });
+                    })
+                    ->orWhereHas('parentProperty.createdBy', function (Builder $userQuery) use ($like, $digitLike): void {
+                        $userQuery->where(function (Builder $nested) use ($like, $digitLike): void {
+                            $nested->where('user_full_name', 'like', $like)
+                                ->orWhere('user_phone', 'like', $like);
+
+                            if ($digitLike !== null) {
+                                $nested->orWhere('user_phone', 'like', $digitLike);
+                            }
+                        });
+                    })
+                    ->orWhereHas('contactNumbers', function (Builder $contactQuery) use ($like, $digitLike): void {
+                        $contactQuery->where(function (Builder $nested) use ($like, $digitLike): void {
+                            $nested->where('property_contact_number_phone_number', 'like', $like);
+
+                            if ($digitLike !== null) {
+                                $nested->orWhere('property_contact_number_phone_number', 'like', $digitLike);
+                            }
+                        });
+                    });
+
+                if ($digitLike !== null) {
+                    $builder->orWhere('property_owner_phone', 'like', $digitLike)
+                        ->orWhere('property_contact_phone', 'like', $digitLike);
+                }
 
                 if (is_numeric($search)) {
                     $builder->orWhere('property_id', (int) $search);

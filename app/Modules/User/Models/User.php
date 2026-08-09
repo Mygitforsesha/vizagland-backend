@@ -29,6 +29,8 @@ class User extends Authenticatable
 
     public const ROLE_MEMBER = 'member';
 
+    public const ROLE_PUBLIC_USER = 'public_user';
+
     protected $rememberTokenName = 'user_remember_token';
 
     /**

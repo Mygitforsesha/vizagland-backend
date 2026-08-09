@@ -4,6 +4,7 @@ namespace App\Modules\PropertyFieldConfiguration\Services;
 
 use App\Modules\ActivityLog\Enums\ActivityLogType;
 use App\Modules\ActivityLog\Services\ActivityLogService;
+use App\Modules\PropertyFieldConfiguration\Enums\PropertyFieldDataType;
 use App\Modules\PropertyFieldConfiguration\Enums\PropertyFieldSection;
 use App\Modules\PropertyFieldConfiguration\Models\PropertyFieldConfiguration;
 use App\Modules\PropertyFieldConfiguration\Repositories\PropertyFieldConfigurationRepository;
@@ -12,6 +13,29 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 
 class PropertyFieldConfigurationService
 {
+    /**
+     * @var list<array{key: string, label: string, order: int}>
+     */
+    // private const PUBLIC_SECTIONS = [
+    //     ['key' => 'property_location', 'label' => 'Property Location', 'order' => 10],
+    //     ['key' => 'property_category', 'label' => 'Property Category', 'order' => 20],
+    //     ['key' => 'property_details', 'label' => 'Property Details', 'order' => 30],
+    //     ['key' => 'property_images', 'label' => 'Property Images', 'order' => 40],
+    //     ['key' => 'property_documents', 'label' => 'Property Documents', 'order' => 50],
+    //     ['key' => 'owner_details', 'label' => 'Owner Details', 'order' => 60],
+    //     ['key' => 'other_services', 'label' => 'Other Services', 'order' => 70],
+    //     ['key' => 'property_contact_numbers', 'label' => 'Property Contact Numbers', 'order' => 80],
+    // ];
+private const PUBLIC_SECTIONS = [
+    ['key' => 'property_location', 'label' => 'Property Location', 'order' => 10],
+    ['key' => 'property_category', 'label' => 'Property Category', 'order' => 20],
+    ['key' => 'property_details', 'label' => 'Property Details', 'order' => 30],
+    ['key' => 'owner_details', 'label' => 'Owner Details', 'order' => 40],
+    ['key' => 'other_services', 'label' => 'Other Services', 'order' => 50],
+    ['key' => 'property_contact_numbers', 'label' => 'Property Contact Numbers', 'order' => 60],
+    ['key' => 'property_images', 'label' => 'Property Images', 'order' => 70],
+    ['key' => 'property_documents', 'label' => 'Property Documents', 'order' => 80],
+];
     /**
      * @var Collection<int, PropertyFieldConfiguration>|null
      */
@@ -49,6 +73,8 @@ class PropertyFieldConfigurationService
      */
     public function create(array $attributes): PropertyFieldConfiguration
     {
+        $attributes = $this->applyPublicSectionMapping($attributes);
+
         $configuration = $this->propertyFieldConfigurationRepository->create($attributes);
         $this->resetCache();
 
@@ -70,6 +96,7 @@ class PropertyFieldConfigurationService
     public function update(int $propertyFieldConfigurationId, array $attributes): PropertyFieldConfiguration
     {
         $configuration = $this->show($propertyFieldConfigurationId);
+        $attributes = $this->applyPublicSectionMapping($attributes, $configuration);
         $updatedConfiguration = $this->propertyFieldConfigurationRepository->update($configuration, $attributes);
         $this->resetCache();
 
@@ -95,29 +122,67 @@ class PropertyFieldConfigurationService
     }
 
     /**
-     * @return array<string, list<array{
-     *     property_field_key: string,
-     *     property_field_label: string,
-     *     property_field_data_type: string,
-     *     property_field_is_required: bool
-     * }>>
+     * @return array{sections: list<array<string, mixed>>}
      */
     public function publicFormConfig(): array
     {
-        $grouped = [];
+        $fieldsBySection = [];
 
-        foreach ($this->propertyFieldConfigurationRepository->activeOrdered() as $configuration) {
-            $section = $configuration->property_field_section;
+        foreach ($this->propertyFieldConfigurationRepository->activePublicFormFields() as $configuration) {
+            $sectionKey = $configuration->property_field_public_section;
 
-            $grouped[$section][] = [
-                'property_field_key' => $configuration->property_field_key,
-                'property_field_label' => $configuration->property_field_label,
-                'property_field_data_type' => $configuration->property_field_data_type->value,
-                'property_field_is_required' => $configuration->property_field_is_required,
+            if ($sectionKey === null || $sectionKey === '') {
+                continue;
+            }
+
+            $fieldsBySection[$sectionKey][] = $this->mapPublicField($configuration);
+        }
+
+        $sections = [];
+
+        foreach (self::PUBLIC_SECTIONS as $section) {
+            $sections[] = [
+                'key' => $section['key'],
+                'label' => $section['label'],
+                'order' => $section['order'],
+                'fields' => $fieldsBySection[$section['key']] ?? [],
             ];
         }
 
-        return $grouped;
+        return ['sections' => $sections];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function publicMasterDropdowns(): array
+    {
+        $dropdowns = [];
+
+        foreach ($this->propertyFieldConfigurationRepository->activeMasterDropdownsWithOptions() as $dropdown) {
+            $dropdowns[$dropdown->master_dropdown_key] = $dropdown->options
+                ->map(static fn ($option): array => [
+                    'value' => $option->master_dropdown_option_value,
+                    'label' => $option->master_dropdown_option_label,
+                    'order' => $option->master_dropdown_option_display_order,
+                ])
+                ->values()
+                ->all();
+        }
+
+        $categoryAreaUnits = [];
+
+        foreach ($this->propertyFieldConfigurationRepository->activeCategoryAreaUnits() as $mapping) {
+            $categoryAreaUnits[$mapping->property_category_value][] = [
+                'value' => $mapping->property_area_unit_value,
+                'label' => $mapping->property_area_unit_label,
+                'order' => $mapping->property_category_area_unit_display_order,
+            ];
+        }
+
+        $dropdowns['category_area_units'] = $categoryAreaUnits;
+
+        return $dropdowns;
     }
 
     /**
@@ -130,8 +195,8 @@ class PropertyFieldConfigurationService
             $validationPath = $this->validationPathFor($configuration);
 
             if (! $configuration->property_field_is_active) {
-                $rules[$validationPath] = ['prohibited'];
-
+                // Soft-ignore: do not reject payload keys for inactive fields.
+                // Values are stripped later by filterInactiveFieldAttributes().
                 continue;
             }
 
@@ -186,7 +251,102 @@ class PropertyFieldConfigurationService
             return 'property_other_services.property_service_name';
         }
 
+        if (in_array($configuration->property_field_key, ['property_images', 'property_documents', 'property_contact_numbers'], true)) {
+            return $configuration->property_field_key;
+        }
+
         return $configuration->property_field_section.'.'.$configuration->property_field_key;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function mapPublicField(PropertyFieldConfiguration $configuration): array
+    {
+        return [
+            'id' => $configuration->property_field_configuration_id,
+            'key' => $configuration->property_field_key,
+            'label' => $configuration->property_field_label,
+            'placeholder' => $configuration->property_field_placeholder,
+            'section' => $configuration->property_field_public_section,
+            'order' => $configuration->property_field_public_order ?? $configuration->property_field_display_order,
+            'type' => in_array($configuration->property_field_key, [
+                'property_contact_numbers',
+                'property_youtube_video_links',
+                'property_location_links',
+            ], true) || $configuration->property_field_data_type === PropertyFieldDataType::Repeater
+                ? 'repeater'
+                : $configuration->property_field_data_type->value,
+            'required' => $configuration->property_field_is_required,
+            'active' => $configuration->property_field_is_active,
+            'readonly' => (bool) $configuration->property_field_is_readonly,
+            'searchable' => (bool) $configuration->property_field_is_searchable,
+            'multiple' => (bool) $configuration->property_field_is_multiple,
+            'options' => $configuration->property_field_options,
+            'options_api' => $configuration->property_field_options_api,
+            'validation' => $configuration->property_field_validation,
+            'default_value' => $configuration->property_field_default_value,
+            'depends_on' => $configuration->property_field_depends_on,
+        ];
+    }
+
+    /**
+     * Map admin section → public section so new/updated fields appear in public form-config
+     * without changing the public-section gate.
+     *
+     * @param  array<string, mixed>  $attributes
+     * @return array<string, mixed>
+     */
+    private function applyPublicSectionMapping(
+        array $attributes,
+        ?PropertyFieldConfiguration $existing = null,
+    ): array {
+        $fieldKey = (string) ($attributes['property_field_key'] ?? $existing?->property_field_key ?? '');
+        $adminSection = $attributes['property_field_section'] ?? $existing?->property_field_section;
+
+        $shouldMapSection = $existing === null
+            || array_key_exists('property_field_section', $attributes)
+            || array_key_exists('property_field_key', $attributes);
+
+        if ($shouldMapSection && is_string($adminSection) && $adminSection !== '') {
+            $publicSection = $this->resolvePublicSection($adminSection, $fieldKey);
+            $attributes['property_field_public_section'] = $publicSection;
+            $attributes['property_field_public_order'] = $publicSection === null
+                ? null
+                : (int) ($attributes['property_field_display_order']
+                    ?? $existing?->property_field_display_order
+                    ?? 0);
+        } elseif (
+            array_key_exists('property_field_display_order', $attributes)
+            && ($attributes['property_field_public_section'] ?? $existing?->property_field_public_section) !== null
+        ) {
+            $attributes['property_field_public_order'] = (int) $attributes['property_field_display_order'];
+        }
+
+        return $attributes;
+    }
+
+    private function resolvePublicSection(string $adminSection, string $fieldKey): ?string
+    {
+        if (in_array($fieldKey, ['property_owner_name', 'property_owner_phone'], true)) {
+            return null;
+        }
+
+        return match ($fieldKey) {
+            'property_images' => 'property_images',
+            'property_documents' => 'property_documents',
+            'property_contact_numbers' => 'property_contact_numbers',
+            default => match ($adminSection) {
+                PropertyFieldSection::PropertyLocation->value => 'property_location',
+                PropertyFieldSection::PropertyGroupAndTypes->value => 'property_category',
+                PropertyFieldSection::PropertyDetails->value,
+                PropertyFieldSection::PropertyApproval->value => 'property_details',
+                PropertyFieldSection::PropertyOwner->value => 'owner_details',
+                PropertyFieldSection::PropertyOtherServices->value => 'other_services',
+                PropertyFieldSection::PropertyMedia->value => 'property_images',
+                default => null,
+            },
+        };
     }
 
     /**

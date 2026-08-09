@@ -23,9 +23,12 @@ class ProfileSettingsResource extends JsonResource
             'user_phone' => $this->user_phone,
             'user_role' => $this->user_role->value,
             'user_role_label' => $this->user_role->label(),
+            'user_last_login_at' => $this->user_last_login_at?->toIso8601String(),
+            'created_at' => $this->created_at?->toIso8601String(),
             'profile' => $profile === null
                 ? $this->emptyProfile()
                 : new ProfileSettingsProfileResource($profile),
+            'registration_types' => UserRegistrationTypeResource::collection($this->whenLoaded('registrationTypes')),
         ];
     }
 

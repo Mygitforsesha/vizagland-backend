@@ -2,9 +2,11 @@
 
 namespace App\Modules\ActivityLog\Repositories;
 
+use App\Modules\ActivityLog\Enums\ActivityLogType;
 use App\Modules\ActivityLog\Models\ActivityLog;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Collection;
 use Illuminate\Support\LazyCollection;
 
 class ActivityLogRepository
@@ -54,6 +56,22 @@ class ActivityLogRepository
             ->where('activity_log_entity_id', $entityId)
             ->where('activity_log_action', $action)
             ->exists();
+    }
+
+    /**
+     * @return Collection<int, ActivityLog>
+     */
+    public function listLoginActivityForUser(int $userId, int $limit = 50): Collection
+    {
+        return ActivityLog::query()
+            ->with(['user.profile'])
+            ->where('activity_log_user_id', $userId)
+            ->where('activity_log_type', ActivityLogType::Authentication)
+            ->where('activity_log_action', 'login')
+            ->orderByDesc('activity_log_created_at')
+            ->orderByDesc('activity_log_id')
+            ->limit($limit)
+            ->get();
     }
 
     /**

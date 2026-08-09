@@ -45,7 +45,7 @@ class PropertySearchRepository
                 'property_published_at',
                 'created_at',
             ])
-            ->with(['images' => fn (Builder $builder) => $builder->orderBy('property_image_sort_order')->limit(1)])
+            ->with(['images' => fn ($query) => $query->orderBy('property_image_sort_order')->limit(1)])
             ->where('property_record_type', PropertyRecordType::VizaglandCopy)
             ->where('property_status', PropertyStatus::Approved)
             ->where('property_is_deleted', false);

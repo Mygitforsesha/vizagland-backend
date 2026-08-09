@@ -11,7 +11,7 @@ class ProfileRepository
     public function findByIdWithProfile(int $userId): ?User
     {
         return User::query()
-            ->with('profile')
+            ->with(['profile', 'registrationTypes'])
             ->where('user_id', $userId)
             ->first();
     }

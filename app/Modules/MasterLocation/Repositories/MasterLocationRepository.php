@@ -43,7 +43,7 @@ class MasterLocationRepository
         )->exists();
     }
 
-    public function search(string $term, int $limit, ?int $page = null): Collection|LengthAwarePaginator
+    public function search(string $term, ?int $limit = null, ?int $page = null): Collection|LengthAwarePaginator
     {
         $query = MasterLocation::query()
             ->where(function (Builder $builder) use ($term): void {
@@ -59,10 +59,48 @@ class MasterLocationRepository
             ->orderBy('master_location_id');
 
         if ($page !== null) {
-            return $query->paginate(perPage: $limit, page: $page);
+            return $query->paginate(perPage: $limit ?? 20, page: $page);
         }
 
-        return $query->limit($limit)->get();
+        if ($limit !== null) {
+            return $query->limit($limit)->get();
+        }
+
+        return $query->get();
+    }
+
+    public function list(?int $limit = null, ?int $page = null): Collection|LengthAwarePaginator
+    {
+        $query = MasterLocation::query()
+            ->orderBy('master_location_village')
+            ->orderBy('master_location_id');
+
+        if ($page !== null) {
+            return $query->paginate(perPage: $limit ?? 20, page: $page);
+        }
+
+        if ($limit !== null) {
+            return $query->limit($limit)->get();
+        }
+
+        return $query->get();
+    }
+
+    /**
+     * @param  array<string, mixed>  $filters
+     */
+    public function paginateAdmin(
+        array $filters,
+        int $perPage,
+        string $sortBy,
+        string $sortDirection,
+    ): LengthAwarePaginator {
+        $query = MasterLocation::query();
+
+        $this->applyAdminFilters($query, $filters);
+        $this->applyAdminSorting($query, $sortBy, $sortDirection);
+
+        return $query->paginate($perPage);
     }
 
     public function truncate(): void
@@ -84,6 +122,49 @@ class MasterLocationRepository
     public function insertMany(array $rows): void
     {
         MasterLocation::query()->insert($rows);
+    }
+
+    /**
+     * @param  Builder<MasterLocation>  $query
+     * @param  array<string, mixed>  $filters
+     */
+    private function applyAdminFilters(Builder $query, array $filters): void
+    {
+        if (! empty($filters['search']) && is_string($filters['search'])) {
+            $term = strtolower($filters['search']);
+
+            $query->where(function (Builder $builder) use ($term): void {
+                foreach (self::SEARCHABLE_COLUMNS as $column) {
+                    $builder->orWhereRaw("LOWER({$column}) LIKE ?", ['%'.$term.'%']);
+                }
+            });
+        }
+
+        if (! empty($filters['master_location_district']) && is_string($filters['master_location_district'])) {
+            $query->whereRaw(
+                'LOWER(master_location_district) = ?',
+                [strtolower($filters['master_location_district'])],
+            );
+        }
+
+        if (! empty($filters['master_location_mandal']) && is_string($filters['master_location_mandal'])) {
+            $query->whereRaw(
+                'LOWER(master_location_mandal) = ?',
+                [strtolower($filters['master_location_mandal'])],
+            );
+        }
+    }
+
+    /**
+     * @param  Builder<MasterLocation>  $query
+     */
+    private function applyAdminSorting(Builder $query, string $sortBy, string $sortDirection): void
+    {
+        $query->orderBy($sortBy, $sortDirection);
+
+        if ($sortBy !== 'master_location_id') {
+            $query->orderBy('master_location_id');
+        }
     }
 
     /**

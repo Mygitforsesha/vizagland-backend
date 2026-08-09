@@ -53,6 +53,11 @@ trait HasRoles
         return $this->hasRole(UserRole::Member);
     }
 
+    public function isPublicUser(): bool
+    {
+        return $this->hasRole(UserRole::PublicUser);
+    }
+
     public function isActive(): bool
     {
         return (bool) $this->user_is_active;

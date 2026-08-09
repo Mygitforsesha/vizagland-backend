@@ -15,6 +15,12 @@ class SearchPropertiesRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
+        $searchFilters = $this->input('search_filters');
+
+        if (is_array($searchFilters)) {
+            $this->merge($searchFilters);
+        }
+
         $this->merge([
             'page' => $this->input('page', 1),
             'limit' => $this->input('limit', 6),
@@ -27,6 +33,8 @@ class SearchPropertiesRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'search_keyword' => ['nullable', 'string', 'max:255'],
+            'search_filters' => ['nullable', 'array'],
             'property_village' => ['nullable', 'string', 'max:255'],
             'property_district' => ['nullable', 'string', 'max:255'],
             'property_mandal' => ['nullable', 'string', 'max:255'],
@@ -108,5 +116,32 @@ class SearchPropertiesRequest extends FormRequest
     public function limit(): int
     {
         return (int) $this->input('limit', 6);
+    }
+
+    public function searchKeyword(): ?string
+    {
+        $keyword = $this->input('search_keyword');
+
+        if (! is_string($keyword) || trim($keyword) === '') {
+            return null;
+        }
+
+        return trim($keyword);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function historyFilters(): array
+    {
+        $filters = $this->filters();
+        $filters['sort_by'] = $this->sortBy()->value;
+        $filters['page'] = $this->page();
+        $filters['limit'] = $this->limit();
+
+        return array_filter(
+            $filters,
+            static fn (mixed $value): bool => $value !== null && $value !== '' && $value !== [],
+        );
     }
 }

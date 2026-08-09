@@ -68,6 +68,14 @@ class ActivityLogService
         return $this->activityLogRepository->exportCursor($filters);
     }
 
+    /**
+     * @return \Illuminate\Support\Collection<int, ActivityLog>
+     */
+    public function loginActivityForUser(int $userId, int $limit = 50): \Illuminate\Support\Collection
+    {
+        return $this->activityLogRepository->listLoginActivityForUser($userId, $limit);
+    }
+
     public function backfillHistoricalActivities(): int
     {
         return $this->activityLogBackfillService->backfill();

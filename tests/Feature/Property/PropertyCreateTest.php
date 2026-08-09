@@ -5,6 +5,7 @@ namespace Tests\Feature\Property;
 use App\Modules\Property\Enums\PropertyRecordType;
 use App\Modules\Property\Models\Property;
 use App\Modules\Property\Models\PropertyContactNumber;
+use App\Modules\User\Enums\UserRole;
 use App\Modules\User\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -51,9 +52,52 @@ class PropertyCreateTest extends TestCase
         $this->assertSame(2020, $original->property_year);
         $this->assertNull($original->property_total_floors);
         $this->assertSame('https://www.youtube.com/watch?v=abc123', $original->property_youtube_video_link);
+        $this->assertSame(
+            [
+                ['url' => 'https://www.youtube.com/watch?v=abc123'],
+                ['url' => 'https://www.youtube.com/watch?v=def456'],
+            ],
+            $original->property_youtube_video_links,
+        );
+        $this->assertSame(
+            [
+                ['url' => 'https://maps.google.com/?q=17.7,83.2'],
+                ['url' => 'https://maps.google.com/?q=17.8,83.3'],
+            ],
+            $original->property_location_links,
+        );
+        $this->assertSame(17.728945, $original->property_posting_location['user_latitude']);
+        $this->assertSame('Visakhapatnam', $original->property_posting_location['user_district']);
 
         $this->assertSame(2, PropertyContactNumber::query()->where('property_id', $originalId)->count());
         $this->assertSame(2, PropertyContactNumber::query()->where('property_id', $copyId)->count());
+    }
+
+    public function test_public_property_create_accepts_legacy_singular_other_service_links(): void
+    {
+        Storage::fake('property_media');
+
+        $response = $this->postJson('/api/public/properties', [
+            'property_other_services' => [
+                'property_youtube_video_link' => 'https://www.youtube.com/watch?v=legacy1',
+                'property_location_link' => 'https://maps.google.com/?q=17.1,83.1',
+            ],
+        ]);
+
+        $response->assertCreated();
+
+        $original = Property::query()->findOrFail($response->json('data.original_property_id'));
+
+        $this->assertSame('https://www.youtube.com/watch?v=legacy1', $original->property_youtube_video_link);
+        $this->assertSame(
+            [['url' => 'https://www.youtube.com/watch?v=legacy1']],
+            $original->property_youtube_video_links,
+        );
+        $this->assertSame('https://maps.google.com/?q=17.1,83.1', $original->property_location_link);
+        $this->assertSame(
+            [['url' => 'https://maps.google.com/?q=17.1,83.1']],
+            $original->property_location_links,
+        );
     }
 
     public function test_public_property_create_accepts_partial_payload_with_empty_numeric_strings(): void
@@ -124,7 +168,7 @@ class PropertyCreateTest extends TestCase
         $this->assertSame(0, PropertyContactNumber::query()->where('property_id', $originalId)->count());
     }
 
-    public function test_property_auth_is_accepted_but_not_persisted(): void
+    public function test_property_auth_creates_public_user_and_returns_mobile(): void
     {
         Storage::fake('property_media');
 
@@ -139,13 +183,114 @@ class PropertyCreateTest extends TestCase
             ],
         ]);
 
-        $response->assertCreated();
+        $response->assertCreated()
+            ->assertJsonPath('message', 'Property submitted successfully.')
+            ->assertJsonPath('data.username_or_mobile', '9876543210');
 
         $copy = Property::query()->findOrFail($response->json('data.vizagland_copy_property_id'));
 
         $this->assertSame('Auth Village', $copy->property_village);
         $this->assertNull($copy->property_owner_email);
         $this->assertStringNotContainsString('Secret@123', $response->getContent());
+
+        $user = User::query()->where('user_phone', '9876543210')->first();
+
+        $this->assertNotNull($user);
+        $this->assertSame(UserRole::PublicUser, $user->user_role);
+        $this->assertSame('poster@example.com', $user->user_email);
+        $this->assertTrue($user->user_is_active);
+        $this->assertSame($user->user_id, $copy->property_created_by);
+        $this->assertSame($user->user_id, $copy->property_created_by_id);
+        $this->assertSame('public', $copy->property_created_by_type->value);
+    }
+
+    public function test_property_auth_does_not_duplicate_existing_user(): void
+    {
+        Storage::fake('property_media');
+
+        $existing = User::factory()->create([
+            'user_phone' => '9876543210',
+            'user_role' => UserRole::Member,
+            'user_email' => 'existing@example.com',
+        ]);
+
+        $response = $this->postJson('/api/public/properties', [
+            'property_auth' => [
+                'username_or_mobile' => '9876543210',
+                'password' => 'Secret@123',
+                'email' => 'poster@example.com',
+            ],
+            'property_location' => [
+                'property_village' => 'Auth Village',
+            ],
+        ]);
+
+        $response->assertCreated()
+            ->assertJsonPath('data.username_or_mobile', '9876543210');
+
+        $this->assertSame(1, User::query()->where('user_phone', '9876543210')->count());
+        $existing->refresh();
+        $this->assertSame(UserRole::Member, $existing->user_role);
+        $this->assertSame('existing@example.com', $existing->user_email);
+
+        $copy = Property::query()->findOrFail($response->json('data.vizagland_copy_property_id'));
+        $this->assertNull($copy->property_created_by);
+    }
+
+    public function test_property_auth_links_existing_agent_as_creator(): void
+    {
+        Storage::fake('property_media');
+
+        $agent = User::factory()->create([
+            'user_phone' => '7878752525',
+            'user_role' => UserRole::Agent,
+            'user_is_active' => true,
+        ]);
+
+        $response = $this->postJson('/api/public/properties', [
+            'property_auth' => [
+                'username_or_mobile' => '7878752525',
+                'password' => 'Secret@123',
+            ],
+            'property_location' => [
+                'property_village' => 'Agent Auth Village',
+            ],
+        ]);
+
+        $response->assertCreated()
+            ->assertJsonPath('data.username_or_mobile', '7878752525');
+
+        $copy = Property::query()->findOrFail($response->json('data.vizagland_copy_property_id'));
+        $this->assertSame($agent->user_id, $copy->property_created_by);
+        $this->assertSame($agent->user_id, $copy->property_created_by_id);
+        $this->assertSame('public', $copy->property_created_by_type->value);
+    }
+
+    public function test_public_create_links_existing_agent_by_owner_phone(): void
+    {
+        Storage::fake('property_media');
+
+        $agent = User::factory()->create([
+            'user_phone' => '7878752525',
+            'user_role' => UserRole::Agent,
+            'user_is_active' => true,
+        ]);
+
+        $response = $this->postJson('/api/public/properties', [
+            'property_owner' => [
+                'property_owner_phone' => '7878752525',
+            ],
+            'property_location' => [
+                'property_village' => 'Agent Owner Village',
+            ],
+        ]);
+
+        $response->assertCreated();
+
+        $copy = Property::query()->findOrFail($response->json('data.vizagland_copy_property_id'));
+        $this->assertSame('7878752525', $copy->property_owner_phone);
+        $this->assertSame($agent->user_id, $copy->property_created_by);
+        $this->assertSame($agent->user_id, $copy->property_created_by_id);
     }
 
     public function test_authenticated_property_create_with_files(): void
@@ -237,8 +382,27 @@ class PropertyCreateTest extends TestCase
                 'email' => 'poster@example.com',
             ],
             'property_other_services' => [
-                'property_youtube_video_link' => 'https://www.youtube.com/watch?v=abc123',
-                'property_location_link' => 'https://maps.google.com/?q=17.7,83.2',
+                'property_youtube_video_links' => [
+                    ['url' => 'https://www.youtube.com/watch?v=abc123'],
+                    ['url' => 'https://www.youtube.com/watch?v=def456'],
+                ],
+                'property_location_links' => [
+                    ['url' => 'https://maps.google.com/?q=17.7,83.2'],
+                    ['url' => 'https://maps.google.com/?q=17.8,83.3'],
+                ],
+            ],
+            'property_posting_location' => [
+                'user_latitude' => 17.728945,
+                'user_longitude' => 83.305678,
+                'user_road' => 'Beach Road',
+                'user_colony' => 'MVP Colony',
+                'user_suburb' => 'MVP Colony',
+                'user_village' => null,
+                'user_mandal' => 'Visakhapatnam',
+                'user_district' => 'Visakhapatnam',
+                'user_state' => 'Andhra Pradesh',
+                'user_pincode' => '530017',
+                'user_country' => 'India',
             ],
             'property_contact_numbers' => [
                 ['registration_type' => 'Owner', 'phone_number' => '9876543210'],

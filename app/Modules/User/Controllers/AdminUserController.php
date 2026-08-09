@@ -7,6 +7,7 @@ use App\Enums\ApiResponseStatus;
 use App\Http\Controllers\Controller;
 use App\Modules\User\Http\Resources\AdminUserListItemResource;
 use App\Modules\User\Http\Resources\RegisteredUserResource;
+use App\Modules\ActivityLog\Resources\ActivityLogResource;
 use App\Modules\User\Requests\CreateAdminUserRequest;
 use App\Modules\User\Requests\ListAdminUsersRequest;
 use App\Modules\User\Requests\ResetAdminUserPasswordRequest;
@@ -49,9 +50,12 @@ class AdminUserController extends Controller
     {
         try {
             $user = $this->adminUserService->show($user_id);
+            $loginActivity = ActivityLogResource::collection(
+                $this->adminUserService->loginActivity($user_id),
+            )->resolve();
 
             return $this->successResponse(
-                data: new RegisteredUserResource($user),
+                data: new RegisteredUserResource($user, $loginActivity),
                 message: 'User retrieved successfully.',
             );
         } catch (ModelNotFoundException) {

@@ -17,46 +17,6 @@ class ContactUsPageService
                 'contact_us_helpline_email_note' => 'Response within 24 hours',
                 'contact_us_helpline_address' => 'Vizag Land Office, Visakhapatnam - 530003',
             ],
-            'contact_us_district_offices' => [
-                [
-                    'contact_us_district_office_city' => 'Hyderabad',
-                    'contact_us_district_office_phone' => '040-23456789',
-                ],
-                [
-                    'contact_us_district_office_city' => 'Vijayawada',
-                    'contact_us_district_office_phone' => '0866-2345678',
-                ],
-                [
-                    'contact_us_district_office_city' => 'Visakhapatnam',
-                    'contact_us_district_office_phone' => '0891-2345678',
-                ],
-                [
-                    'contact_us_district_office_city' => 'Tirupati',
-                    'contact_us_district_office_phone' => '0877-2345678',
-                ],
-                [
-                    'contact_us_district_office_city' => 'Guntur',
-                    'contact_us_district_office_phone' => '0863-2345678',
-                ],
-                [
-                    'contact_us_district_office_city' => 'Nellore',
-                    'contact_us_district_office_phone' => '0861-2345678',
-                ],
-            ],
-            'contact_us_working_hours' => [
-                [
-                    'contact_us_working_hours_day' => 'Mon - Fri',
-                    'contact_us_working_hours_time' => '9:00 AM - 5:30 PM',
-                ],
-                [
-                    'contact_us_working_hours_day' => 'Saturday',
-                    'contact_us_working_hours_time' => '9:00 AM - 1:00 PM',
-                ],
-                [
-                    'contact_us_working_hours_day' => 'Sunday & Holidays',
-                    'contact_us_working_hours_time' => 'Closed',
-                ],
-            ],
             'contact_us_faqs' => [
                 [
                     'contact_us_faq_question' => 'How do I verify if a property is genuine?',

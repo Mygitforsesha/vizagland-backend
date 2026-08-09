@@ -30,7 +30,7 @@ class AdminPropertyManagementService
             propertyId: $propertyId,
             admin: $admin,
             action: PropertyReviewAction::Approved,
-            allowedStatuses: [PropertyStatus::PendingReview],
+            allowedStatuses: PropertyStatus::cases(),
             propertyUpdates: function () use ($admin, $reviewRemarks): array {
                 $now = now();
 

@@ -101,9 +101,10 @@ trait ValidatesPropertyCreatePayload
             'property_details.property_price' => ['nullable', 'numeric', 'min:0'],
             'property_details.property_price_range' => ['nullable', 'string', 'max:255'],
             'property_details.property_age' => ['nullable', 'string', 'max:255'],
-            'property_details.property_bedrooms' => ['nullable', 'integer', 'min:0', 'max:50'],
+            'property_details.property_bedrooms' => ['nullable', 'string', 'max:255'],
             'property_details.property_furnishing' => ['nullable', 'string', 'max:255'],
             'property_details.property_under' => ['nullable', 'string', 'max:255'],
+            'property_details.property_approval_authority' => ['nullable', 'string', 'max:255'],
             'property_details.property_document_no' => ['nullable', 'string', 'max:100'],
             'property_details.property_document_year' => ['nullable', 'integer', 'min:1900', 'max:'.(date('Y') + 5)],
             'property_details.property_registration_office_area' => ['nullable', 'string', 'max:255'],
@@ -127,7 +128,14 @@ trait ValidatesPropertyCreatePayload
             )],
 
             'property_other_services' => ['nullable', 'array'],
+            // Optional legacy alias — kept for backward compatibility; not exposed in form-config.
             'property_other_services.property_service_name' => ['nullable', 'string', 'max:255'],
+            // New repeater shape (contact_numbers-style { url } rows)
+            'property_other_services.property_youtube_video_links' => ['nullable', 'array'],
+            'property_other_services.property_youtube_video_links.*.url' => ['nullable', 'string', 'max:2048', 'url'],
+            'property_other_services.property_location_links' => ['nullable', 'array'],
+            'property_other_services.property_location_links.*.url' => ['nullable', 'string', 'max:2048', 'url'],
+            // Legacy singular keys — still accepted and mapped into the array columns.
             'property_other_services.property_youtube_video_link' => ['nullable', 'string', 'max:2048', Rule::when(
                 fn (): bool => filled(data_get($this->input('property_other_services'), 'property_youtube_video_link')),
                 ['url'],
@@ -136,6 +144,19 @@ trait ValidatesPropertyCreatePayload
                 fn (): bool => filled(data_get($this->input('property_other_services'), 'property_location_link')),
                 ['url'],
             )],
+
+            'property_posting_location' => ['nullable', 'array'],
+            'property_posting_location.user_latitude' => ['nullable', 'numeric', 'between:-90,90'],
+            'property_posting_location.user_longitude' => ['nullable', 'numeric', 'between:-180,180'],
+            'property_posting_location.user_road' => ['nullable', 'string', 'max:255'],
+            'property_posting_location.user_colony' => ['nullable', 'string', 'max:255'],
+            'property_posting_location.user_suburb' => ['nullable', 'string', 'max:255'],
+            'property_posting_location.user_village' => ['nullable', 'string', 'max:255'],
+            'property_posting_location.user_mandal' => ['nullable', 'string', 'max:255'],
+            'property_posting_location.user_district' => ['nullable', 'string', 'max:255'],
+            'property_posting_location.user_state' => ['nullable', 'string', 'max:255'],
+            'property_posting_location.user_pincode' => ['nullable', 'string', 'max:20'],
+            'property_posting_location.user_country' => ['nullable', 'string', 'max:255'],
 
             'property_contact_numbers' => ['nullable', 'array'],
             'property_contact_numbers.*.registration_type' => ['nullable', 'string', 'max:255'],
@@ -168,8 +189,14 @@ trait ValidatesPropertyCreatePayload
             foreach ($fields as $field) {
                 $value = data_get($this->input($group), $field);
 
-                if ($value !== null && $value !== '') {
-                    $attributes[$field] = $value;
+                if ($value === null || $value === '') {
+                    continue;
+                }
+
+                $sanitized = $this->sanitizeMappedPropertyAttribute($field, $value);
+
+                if ($sanitized !== null && $sanitized !== '') {
+                    $attributes[$field] = $sanitized;
                 }
             }
         }
@@ -180,20 +207,118 @@ trait ValidatesPropertyCreatePayload
             $attributes['property_other_service_name'] = $serviceName;
         }
 
-        $youtubeLink = data_get($this->input('property_other_services'), 'property_youtube_video_link');
+        $youtubeLinks = $this->normalizeUrlLinkItems(
+            data_get($this->input('property_other_services'), 'property_youtube_video_links'),
+            data_get($this->input('property_other_services'), 'property_youtube_video_link'),
+        );
 
-        if ($youtubeLink !== null && $youtubeLink !== '') {
-            $attributes['property_youtube_video_link'] = $youtubeLink;
+        if ($youtubeLinks !== []) {
+            $attributes['property_youtube_video_links'] = $youtubeLinks;
+            $attributes['property_youtube_video_link'] = $youtubeLinks[0]['url'];
         }
 
-        $locationLink = data_get($this->input('property_other_services'), 'property_location_link');
+        $locationLinks = $this->normalizeUrlLinkItems(
+            data_get($this->input('property_other_services'), 'property_location_links'),
+            data_get($this->input('property_other_services'), 'property_location_link'),
+        );
 
-        if ($locationLink !== null && $locationLink !== '') {
-            $attributes['property_location_link'] = $locationLink;
+        if ($locationLinks !== []) {
+            $attributes['property_location_links'] = $locationLinks;
+            $attributes['property_location_link'] = $locationLinks[0]['url'];
+        }
+
+        $postingLocation = $this->propertyPostingLocationAttributes();
+
+        if ($postingLocation !== []) {
+            $attributes['property_posting_location'] = $postingLocation;
         }
 
         return app(PropertyFieldConfigurationService::class)
             ->filterInactiveFieldAttributes($attributes);
+    }
+
+    /**
+     * Normalize repeater URL rows and optional legacy singular string into [{ url }].
+     *
+     * @return list<array{url: string}>
+     */
+    protected function normalizeUrlLinkItems(mixed $items, mixed $legacySingular = null): array
+    {
+        $links = [];
+
+        if (is_array($items)) {
+            foreach ($items as $item) {
+                if (is_string($item) && trim($item) !== '') {
+                    $links[] = ['url' => trim($item)];
+
+                    continue;
+                }
+
+                if (! is_array($item)) {
+                    continue;
+                }
+
+                $url = $item['url'] ?? null;
+
+                if (! is_string($url) || trim($url) === '') {
+                    continue;
+                }
+
+                $links[] = ['url' => trim($url)];
+            }
+        }
+
+        if ($links === [] && is_string($legacySingular) && trim($legacySingular) !== '') {
+            $links[] = ['url' => trim($legacySingular)];
+        }
+
+        return $links;
+    }
+
+    /**
+     * Live browser/device location at post time — separate from property_location.
+     *
+     * @return array<string, mixed>
+     */
+    public function propertyPostingLocationAttributes(): array
+    {
+        $input = $this->input('property_posting_location');
+
+        if (! is_array($input)) {
+            return [];
+        }
+
+        $fields = [
+            'user_latitude',
+            'user_longitude',
+            'user_road',
+            'user_colony',
+            'user_suburb',
+            'user_village',
+            'user_mandal',
+            'user_district',
+            'user_state',
+            'user_pincode',
+            'user_country',
+        ];
+
+        $attributes = [];
+
+        foreach ($fields as $field) {
+            if (! array_key_exists($field, $input)) {
+                continue;
+            }
+
+            $value = $input[$field];
+
+            if ($value === null || $value === '') {
+                continue;
+            }
+
+            $attributes[$field] = $value;
+        }
+
+        return $attributes;
     }
 
     /**
@@ -284,6 +409,7 @@ trait ValidatesPropertyCreatePayload
                 'property_bedrooms',
                 'property_furnishing',
                 'property_under',
+                'property_approval_authority',
                 'property_document_no',
                 'property_document_year',
                 'property_registration_office_area',
@@ -296,6 +422,41 @@ trait ValidatesPropertyCreatePayload
                 'property_owner_email',
             ],
         ];
+    }
+
+    /**
+     * Coerce create-payload values so integer DB columns never receive JS sentinels
+     * like "NaN" / select keys like "5_plus".
+     */
+    protected function sanitizeMappedPropertyAttribute(string $field, mixed $value): mixed
+    {
+        return match ($field) {
+            'property_bedrooms' => $this->sanitizePropertyBedrooms($value),
+            'property_year', 'property_document_year', 'property_total_floors' => is_numeric($value)
+                ? (int) $value
+                : null,
+            'property_area', 'property_price' => is_numeric($value) ? $value : null,
+            default => $value,
+        };
+    }
+
+    protected function sanitizePropertyBedrooms(mixed $value): ?int
+    {
+        if (is_numeric($value)) {
+            return (int) $value;
+        }
+
+        if (! is_string($value)) {
+            return null;
+        }
+
+        $normalized = strtolower(trim($value));
+
+        if ($normalized === '5_plus' || $normalized === '5+') {
+            return 5;
+        }
+
+        return null;
     }
 
     /**
@@ -371,9 +532,24 @@ trait ValidatesPropertyCreatePayload
                 continue;
             }
 
-            $normalized[$key] = $value === '' ? null : $value;
+            if ($value === '' || $this->isInvalidFrontendSentinel($value)) {
+                $normalized[$key] = null;
+
+                continue;
+            }
+
+            $normalized[$key] = $value;
         }
 
         return $normalized;
+    }
+
+    protected function isInvalidFrontendSentinel(mixed $value): bool
+    {
+        if (! is_string($value)) {
+            return false;
+        }
+
+        return in_array(strtolower(trim($value)), ['nan', 'undefined', 'null', 'infinity', '-infinity'], true);
     }
 }

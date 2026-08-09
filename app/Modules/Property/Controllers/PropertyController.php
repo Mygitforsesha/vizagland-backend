@@ -6,12 +6,14 @@ use App\Constants\HttpStatus;
 use App\Http\Controllers\Controller;
 use App\Modules\Property\Requests\CreatePropertyRequest;
 use App\Modules\Property\Requests\CreatePublicPropertyRequest;
+use App\Modules\Property\Requests\ListMyPropertiesRequest;
 use App\Modules\Property\Requests\ListPropertiesRequest;
 use App\Modules\Property\Requests\SubmitPropertyForReviewRequest;
 use App\Modules\Property\Requests\UpdatePropertyRequest;
 use App\Modules\Property\Resources\PropertyCreatedResource;
 use App\Modules\Property\Resources\PropertyDetailsResource;
 use App\Modules\Property\Resources\PropertyListResource;
+use App\Modules\Property\Resources\PropertyMyListResource;
 use App\Modules\Property\Resources\PropertyResource;
 use App\Modules\Property\Services\PropertyService;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -36,6 +38,19 @@ class PropertyController extends Controller
 
         return $this->successResponse(
             data: new PropertyListResource($properties),
+        );
+    }
+
+    public function myProperties(ListMyPropertiesRequest $request): JsonResponse
+    {
+        $properties = $this->propertyService->listMyPropertiesByPhone(
+            phoneNumber: $request->phoneNumber(),
+            perPage: $request->perPage(),
+            sort: $request->sort(),
+        );
+
+        return $this->successResponse(
+            data: new PropertyMyListResource($properties),
         );
     }
 
@@ -170,6 +185,7 @@ class PropertyController extends Controller
                 images: $request->propertyImages(),
                 documents: $request->propertyDocuments(),
                 contactNumbers: $request->propertyContactNumbers(),
+                authCredentials: $request->propertyAuthCredentials(),
             );
 
             return $this->successResponse(

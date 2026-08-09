@@ -40,4 +40,12 @@ class PublicPropertyService
     {
         return $this->publicPropertyRepository->featured($limit);
     }
+
+    /**
+     * @return array{villages: list<array{id: int, village: string, mandal: string, district: string, property_count: int}>, mandals: list<string>}
+     */
+    public function browseLand(): array
+    {
+        return $this->publicPropertyRepository->browseAreas();
+    }
 }

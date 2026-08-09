@@ -362,6 +362,7 @@ class DashboardRepository
 
     /**
      * @return list<array{
+     *     property_id: ?int,
      *     property_reference_id: ?string,
      *     property_record_type: ?string,
      *     property_status: ?string,
@@ -407,6 +408,7 @@ class DashboardRepository
             $user = $event->action_by_user_id ? $users->get($event->action_by_user_id) : null;
 
             return [
+                'property_id' => $property?->property_id ?? (int) $event->property_id,
                 'property_reference_id' => $property?->property_reference_id,
                 'property_record_type' => $property?->property_record_type?->value,
                 'property_status' => $property?->property_status?->value,

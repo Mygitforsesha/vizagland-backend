@@ -12,9 +12,13 @@ Route::post('properties/search', [PropertySearchController::class, 'search']);
 
 Route::prefix('public')->group(function (): void {
     Route::post('properties', [PropertyController::class, 'storePublic']);
+    // FE alias — same handler/response as properties/search
+    Route::post('property-search-history', [PropertySearchController::class, 'search']);
 });
 
 Route::post('properties', [PropertyController::class, 'store']);
+
+Route::get('properties/my-properties', [PropertyController::class, 'myProperties']);
 
 Route::middleware('auth:sanctum')->group(function (): void {
     Route::get('properties', [PropertyController::class, 'index']);
@@ -36,8 +40,9 @@ Route::middleware(['auth:sanctum', 'role:employee,agent,admin,super_admin'])->gr
     Route::delete('property-documents/{property_document_id}', [PropertyMediaController::class, 'deleteDocument']);
 });
 
-Route::middleware(['auth:sanctum', 'role:admin,super_admin'])->group(function (): void {
+Route::middleware(['auth:sanctum', 'role:admin,super_admin,employee'])->group(function (): void {
     Route::get('admin/properties', [AdminPropertyController::class, 'index']);
+    Route::get('admin/property-search-history', [PropertySearchController::class, 'history']);
     Route::get('admin/properties/{property_id}', [AdminPropertyController::class, 'show']);
     Route::put('admin/properties/{property_id}', [AdminPropertyController::class, 'update']);
     Route::post('admin/properties/{property_id}/approve', [AdminPropertyActionController::class, 'approve']);

@@ -93,8 +93,17 @@ class PropertyDetailsResource extends JsonResource
             'property_other_services' => [
                 'property_service_name' => $this->property_other_service_name,
                 'property_youtube_video_link' => $this->property_youtube_video_link,
+                'property_youtube_video_links' => $this->normalizedUrlLinks(
+                    $this->property_youtube_video_links,
+                    $this->property_youtube_video_link,
+                ),
                 'property_location_link' => $this->property_location_link,
+                'property_location_links' => $this->normalizedUrlLinks(
+                    $this->property_location_links,
+                    $this->property_location_link,
+                ),
             ],
+            'property_posting_location' => $this->property_posting_location,
             'property_contact_numbers' => PropertyContactNumberResource::collection($this->whenLoaded('contactNumbers')),
             'property_metadata' => [
                 'property_is_featured' => $this->property_is_featured,
@@ -116,6 +125,41 @@ class PropertyDetailsResource extends JsonResource
             'property_created_at' => $this->created_at?->toIso8601String(),
             'property_updated_at' => $this->updated_at?->toIso8601String(),
         ];
+    }
+
+    /**
+     * @param  mixed  $links
+     * @return list<array{url: string}>
+     */
+    private function normalizedUrlLinks(mixed $links, mixed $legacySingular = null): array
+    {
+        $normalized = [];
+
+        if (is_array($links)) {
+            foreach ($links as $item) {
+                if (is_string($item) && $item !== '') {
+                    $normalized[] = ['url' => $item];
+
+                    continue;
+                }
+
+                if (! is_array($item)) {
+                    continue;
+                }
+
+                $url = $item['url'] ?? null;
+
+                if (is_string($url) && $url !== '') {
+                    $normalized[] = ['url' => $url];
+                }
+            }
+        }
+
+        if ($normalized === [] && is_string($legacySingular) && $legacySingular !== '') {
+            $normalized[] = ['url' => $legacySingular];
+        }
+
+        return $normalized;
     }
 
     /**
