@@ -49,6 +49,14 @@ class AdvertisementRepository
     public function getPublicSections(): array
     {
         $villageWiseAds = $this->activePublicQuery()
+            ->where(function (Builder $builder): void {
+                $builder->where('advertisement_category', 'village_wise')
+                    ->orWhere('advertisement_category', 'village_wise_ads')
+                    ->orWhere('advertisement_category', 'Village Wise Ads')
+                    ->orWhere('advertisement_type', 'like', '%village_wise%')
+                    ->orWhereJsonContains('advertisement_types', 'village_wise_ads')
+                    ->orWhereJsonContains('advertisement_types', 'village_wise');
+            })
             ->whereNotNull('advertisement_village_id')
             ->with('village')
             ->orderBy('advertisement_display_order')
@@ -56,13 +64,29 @@ class AdvertisementRepository
             ->get();
 
         $generalAds = $this->activePublicQuery()
-            ->whereNull('advertisement_village_id')
+            ->where(function (Builder $builder): void {
+                $builder->where('advertisement_category', 'general')
+                    ->orWhere('advertisement_category', 'general_ads')
+                    ->orWhere('advertisement_category', 'General Ads')
+                    ->orWhere('advertisement_type', 'like', '%general%')
+                    ->orWhereJsonContains('advertisement_types', 'general_ads')
+                    ->orWhereJsonContains('advertisement_types', 'general')
+                    ->orWhereNull('advertisement_category');
+            })
             ->with('village')
             ->orderBy('advertisement_display_order')
             ->orderByDesc('advertisement_id')
             ->get();
 
         $latestAds = $this->activePublicQuery()
+            ->where(function (Builder $builder): void {
+                $builder->where('advertisement_category', 'latest')
+                    ->orWhere('advertisement_category', 'latest_ads')
+                    ->orWhere('advertisement_category', 'Latest Ads')
+                    ->orWhere('advertisement_type', 'like', '%latest%')
+                    ->orWhereJsonContains('advertisement_types', 'latest_ads')
+                    ->orWhereJsonContains('advertisement_types', 'latest');
+            })
             ->with('village')
             ->orderByDesc('advertisement_id')
             ->get();

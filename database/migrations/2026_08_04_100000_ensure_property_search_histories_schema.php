@@ -91,13 +91,19 @@ return new class extends Migration
         // Non-destructive fix migration — do not drop columns that may hold data.
     }
 
+        
     private function ensureIndex(string $table, string $column): void
     {
         if (! Schema::hasColumn($table, $column)) {
             return;
         }
 
-        $indexName = "{$table}_{$column}_index";
+        $indexName = match ($column) {
+            'property_search_history_created_at' => 'psh_created_at_idx',
+            'property_search_history_user_id' => 'psh_user_id_idx',
+            default => "{$table}_{$column}_idx",
+        };
+
         $sm = Schema::getConnection()->getSchemaBuilder();
         $indexes = collect($sm->getIndexes($table))->pluck('name')->all();
 
@@ -105,8 +111,8 @@ return new class extends Migration
             return;
         }
 
-        Schema::table($table, function (Blueprint $blueprint) use ($column): void {
-            $blueprint->index($column);
+        Schema::table($table, function (Blueprint $blueprint) use ($column, $indexName): void {
+            $blueprint->index($column, $indexName);
         });
     }
 };

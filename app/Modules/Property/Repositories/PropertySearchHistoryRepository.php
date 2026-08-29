@@ -35,10 +35,29 @@ class PropertySearchHistoryRepository
             $query->orderByDesc($createdAtColumn);
         }
 
-        // Always available; keeps API working even before the created_at column migration runs.
-        $query->orderByDesc('property_search_history_id');
+        $primaryKeyColumn = $this->primaryKeyColumn();
+        if ($primaryKeyColumn !== null) {
+            $query->orderByDesc($primaryKeyColumn);
+        }
 
         return $query->paginate(perPage: $perPage, page: $page);
+    }
+
+    private function primaryKeyColumn(): ?string
+    {
+        if (! Schema::hasTable('property_search_histories')) {
+            return null;
+        }
+
+        if (Schema::hasColumn('property_search_histories', 'property_search_history_id')) {
+            return 'property_search_history_id';
+        }
+
+        if (Schema::hasColumn('property_search_histories', 'id')) {
+            return 'id';
+        }
+
+        return null;
     }
 
     private function createdAtColumn(): ?string

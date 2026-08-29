@@ -32,6 +32,7 @@ class PropertySearchController extends Controller
             resultsCount: $properties->total(),
             userId: $request->user()?->user_id,
             ipAddress: $request->ip(),
+            mobileNumber: $request->mobileNumber(),
         );
 
         return $this->successResponse(

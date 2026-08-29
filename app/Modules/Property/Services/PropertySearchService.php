@@ -37,6 +37,7 @@ class PropertySearchService
         int $resultsCount,
         ?int $userId = null,
         ?string $ipAddress = null,
+        ?string $mobileNumber = null,
     ): void {
         try {
             $this->propertySearchHistoryRepository->create([
@@ -47,6 +48,7 @@ class PropertySearchService
                 'property_search_history_filters' => $filters,
                 'property_search_history_results_count' => $resultsCount,
                 'property_search_history_ip_address' => $ipAddress,
+                'property_search_history_mobile_number' => $mobileNumber,
             ]);
         } catch (Throwable $exception) {
             report($exception);

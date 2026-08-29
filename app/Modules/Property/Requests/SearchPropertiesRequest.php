@@ -66,6 +66,7 @@ class SearchPropertiesRequest extends FormRequest
             'sort_by' => ['nullable', Rule::enum(PropertySearchSort::class)],
             'page' => ['required', 'integer', 'min:1'],
             'limit' => ['required', 'integer', 'min:1', 'max:100'],
+            'mobile_number' => ['nullable', 'string', 'max:50'],
         ];
     }
 
@@ -127,6 +128,17 @@ class SearchPropertiesRequest extends FormRequest
         }
 
         return trim($keyword);
+    }
+
+    public function mobileNumber(): ?string
+    {
+        $mobile = $this->input('mobile_number');
+
+        if (! is_string($mobile) || trim($mobile) === '') {
+            return null;
+        }
+
+        return trim($mobile);
     }
 
     /**

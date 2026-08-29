@@ -12,11 +12,31 @@ class PropertySearchHistory extends Model
 {
     public const UPDATED_AT = null;
 
-    protected $primaryKey = 'property_search_history_id';
-
     protected $table = 'property_search_histories';
 
     public $timestamps = false;
+
+    public function getKeyName()
+    {
+        if (Schema::hasTable($this->getTable())) {
+            if (Schema::hasColumn($this->getTable(), 'property_search_history_id')) {
+                return 'property_search_history_id';
+            }
+
+            if (Schema::hasColumn($this->getTable(), 'id')) {
+                return 'id';
+            }
+        }
+
+        return $this->primaryKey;
+    }
+
+    public function getPropertySearchHistoryIdAttribute(): mixed
+    {
+        return $this->getAttribute('property_search_history_id')
+            ?? $this->getAttribute('id')
+            ?? $this->getKey();
+    }
 
     /**
      * @var list<string>
@@ -27,6 +47,7 @@ class PropertySearchHistory extends Model
         'property_search_history_filters',
         'property_search_history_results_count',
         'property_search_history_ip_address',
+        'property_search_history_mobile_number',
         'property_search_history_created_at',
         'created_at',
     ];

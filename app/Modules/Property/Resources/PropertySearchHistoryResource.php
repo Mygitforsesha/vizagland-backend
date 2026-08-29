@@ -20,6 +20,7 @@ class PropertySearchHistoryResource extends JsonResource
             'search_filters' => $this->property_search_history_filters ?? (object) [],
             'results_count' => $this->property_search_history_results_count,
             'ip_address' => $this->property_search_history_ip_address,
+            'mobile_number' => $this->property_search_history_mobile_number,
             'user' => $this->when(
                 $this->relationLoaded('user') && $this->user !== null,
                 fn (): array => [
