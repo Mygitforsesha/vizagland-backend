@@ -49,10 +49,6 @@ class PropertySearchHistoryRepository
             return null;
         }
 
-        if (Schema::hasColumn('property_search_histories', 'property_search_history_id')) {
-            return 'property_search_history_id';
-        }
-
         if (Schema::hasColumn('property_search_histories', 'id')) {
             return 'id';
         }

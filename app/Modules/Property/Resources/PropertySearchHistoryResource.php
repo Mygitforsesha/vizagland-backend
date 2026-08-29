@@ -15,7 +15,7 @@ class PropertySearchHistoryResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id' => $this->property_search_history_id,
+            'id' => $this->id,
             'search_keyword' => $this->property_search_history_keyword,
             'search_filters' => $this->property_search_history_filters ?? (object) [],
             'results_count' => $this->property_search_history_results_count,

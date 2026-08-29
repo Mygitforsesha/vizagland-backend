@@ -18,14 +18,8 @@ class PropertySearchHistory extends Model
 
     public function getKeyName()
     {
-        if (Schema::hasTable($this->getTable())) {
-            if (Schema::hasColumn($this->getTable(), 'property_search_history_id')) {
-                return 'property_search_history_id';
-            }
-
-            if (Schema::hasColumn($this->getTable(), 'id')) {
-                return 'id';
-            }
+        if (Schema::hasTable($this->getTable()) && Schema::hasColumn($this->getTable(), 'id')) {
+            return 'id';
         }
 
         return $this->primaryKey;
@@ -33,9 +27,7 @@ class PropertySearchHistory extends Model
 
     public function getPropertySearchHistoryIdAttribute(): mixed
     {
-        return $this->getAttribute('property_search_history_id')
-            ?? $this->getAttribute('id')
-            ?? $this->getKey();
+        return $this->getAttribute('id') ?? $this->getKey();
     }
 
     /**
