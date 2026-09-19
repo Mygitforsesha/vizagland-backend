@@ -23,7 +23,10 @@ return new class extends Migration
             $table->unique('other_service_slug');
             $table->index('other_service_is_active');
             $table->index('other_service_sort_order');
-            $table->index(['other_service_is_active', 'other_service_sort_order']);
+            $table->index(
+                ['other_service_is_active', 'other_service_sort_order'],
+                'other_services_active_sort_idx',
+            );
         });
     }
 
