@@ -16,6 +16,7 @@ require __DIR__.'/../app/Modules/Report/Routes/api.php';
 require __DIR__.'/../app/Modules/PropertyImport/Routes/api.php';
 require __DIR__.'/../app/Modules/Advertisement/Routes/api.php';
 require __DIR__.'/../app/Modules/MasterLocation/Routes/api.php';
+require __DIR__.'/../app/Modules/OtherService/Routes/api.php';
 
 Route::prefix('auth')->group(function (): void {
     Route::post('register', [AuthController::class, 'register']);

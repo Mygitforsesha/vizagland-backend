@@ -25,5 +25,7 @@ class DatabaseSeeder extends Seeder
                 'user_is_active' => true,
             ],
         );
+
+        $this->call(OtherServiceSeeder::class);
     }
 }
