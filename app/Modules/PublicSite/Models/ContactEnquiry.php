@@ -23,6 +23,7 @@ class ContactEnquiry extends Model
         'contact_enquiry_district',
         'contact_enquiry_message',
         'contact_enquiry_consent',
+        'contact_enquiry_user_location',
         'contact_enquiry_status',
     ];
 
@@ -33,6 +34,7 @@ class ContactEnquiry extends Model
     {
         return [
             'contact_enquiry_consent' => 'boolean',
+            'contact_enquiry_user_location' => 'array',
             'contact_enquiry_status' => ContactEnquiryStatus::class,
         ];
     }

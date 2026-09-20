@@ -2,12 +2,15 @@
 
 namespace App\Modules\Property\Requests;
 
+use App\Http\Requests\Concerns\AcceptsActionUserLocation;
 use App\Modules\Property\Enums\PropertySearchSort;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 class SearchPropertiesRequest extends FormRequest
 {
+    use AcceptsActionUserLocation;
+
     public function authorize(): bool
     {
         return true;
@@ -67,6 +70,7 @@ class SearchPropertiesRequest extends FormRequest
             'page' => ['required', 'integer', 'min:1'],
             'limit' => ['required', 'integer', 'min:1', 'max:100'],
             'mobile_number' => ['nullable', 'string', 'max:50'],
+            ...$this->actionUserLocationRules(),
         ];
     }
 

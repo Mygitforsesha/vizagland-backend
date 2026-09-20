@@ -30,6 +30,7 @@ class PropertySearchService
 
     /**
      * @param  array<string, mixed>  $filters
+     * @param  array<string, mixed>|null  $userLocation
      */
     public function recordHistory(
         ?string $keyword,
@@ -38,6 +39,7 @@ class PropertySearchService
         ?int $userId = null,
         ?string $ipAddress = null,
         ?string $mobileNumber = null,
+        ?array $userLocation = null,
     ): void {
         try {
             $this->propertySearchHistoryRepository->create([
@@ -49,6 +51,7 @@ class PropertySearchService
                 'property_search_history_results_count' => $resultsCount,
                 'property_search_history_ip_address' => $ipAddress,
                 'property_search_history_mobile_number' => $mobileNumber,
+                'property_search_history_user_location' => $userLocation,
             ]);
         } catch (Throwable $exception) {
             report($exception);

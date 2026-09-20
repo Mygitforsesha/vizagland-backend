@@ -21,6 +21,13 @@ class PropertySearchHistoryRepository
             $attributes[$createdAtColumn] = now();
         }
 
+        if (
+            array_key_exists('property_search_history_user_location', $attributes)
+            && ! Schema::hasColumn('property_search_histories', 'property_search_history_user_location')
+        ) {
+            unset($attributes['property_search_history_user_location']);
+        }
+
         return PropertySearchHistory::query()->create($attributes);
     }
 

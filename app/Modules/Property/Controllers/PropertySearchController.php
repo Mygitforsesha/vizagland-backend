@@ -33,6 +33,7 @@ class PropertySearchController extends Controller
             userId: $request->user()?->user_id,
             ipAddress: $request->ip(),
             mobileNumber: $request->mobileNumber(),
+            userLocation: $request->actionUserLocationAttributes(),
         );
 
         return $this->successResponse(

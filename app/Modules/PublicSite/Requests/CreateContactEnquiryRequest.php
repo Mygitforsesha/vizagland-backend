@@ -2,10 +2,13 @@
 
 namespace App\Modules\PublicSite\Requests;
 
+use App\Http\Requests\Concerns\AcceptsActionUserLocation;
 use Illuminate\Foundation\Http\FormRequest;
 
 class CreateContactEnquiryRequest extends FormRequest
 {
+    use AcceptsActionUserLocation;
+
     public function authorize(): bool
     {
         return true;
@@ -57,6 +60,7 @@ class CreateContactEnquiryRequest extends FormRequest
             'contact_enquiry_district' => ['sometimes', 'nullable', 'string', 'max:100'],
             'contact_enquiry_message' => ['required', 'string', 'max:5000'],
             'contact_enquiry_consent' => ['required', 'accepted'],
+            ...$this->actionUserLocationRules(),
         ];
     }
 
@@ -99,6 +103,12 @@ class CreateContactEnquiryRequest extends FormRequest
             if ($value !== '') {
                 $attributes[$field] = $value;
             }
+        }
+
+        $userLocation = $this->actionUserLocationAttributes();
+
+        if ($userLocation !== null) {
+            $attributes['contact_enquiry_user_location'] = $userLocation;
         }
 
         return $attributes;

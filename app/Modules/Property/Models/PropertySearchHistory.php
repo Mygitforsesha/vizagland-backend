@@ -40,6 +40,7 @@ class PropertySearchHistory extends Model
         'property_search_history_results_count',
         'property_search_history_ip_address',
         'property_search_history_mobile_number',
+        'property_search_history_user_location',
         'property_search_history_created_at',
         'created_at',
     ];
@@ -48,6 +49,7 @@ class PropertySearchHistory extends Model
     {
         return [
             'property_search_history_filters' => 'array',
+            'property_search_history_user_location' => 'array',
             'property_search_history_results_count' => 'integer',
             'property_search_history_created_at' => 'datetime',
             'created_at' => 'datetime',

@@ -19,6 +19,7 @@ class ContactEnquiryResource extends JsonResource
         return [
             'contact_enquiry_id' => $this->contact_enquiry_id,
             'contact_enquiry_status' => $this->contact_enquiry_status?->value,
+            'user_location' => $this->contact_enquiry_user_location,
             'created_at' => $this->created_at?->toIso8601String(),
         ];
     }
