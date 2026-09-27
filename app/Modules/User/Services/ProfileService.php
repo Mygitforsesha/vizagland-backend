@@ -54,6 +54,24 @@ class ProfileService
         return $user;
     }
 
+    /**
+     * Persist the authenticated user's current device location.
+     *
+     * @param  array<string, mixed>  $profileAttributes
+     */
+    public function updateLocation(int $userId, array $profileAttributes): User
+    {
+        return DB::transaction(function () use ($userId, $profileAttributes) {
+            $user = $this->profileRepository->requireByIdWithProfile($userId);
+
+            if ($profileAttributes !== []) {
+                $this->profileRepository->updateProfile($user, $profileAttributes);
+            }
+
+            return $this->profileRepository->requireByIdWithProfile($userId);
+        });
+    }
+
     public function changePassword(int $userId, string $currentPassword, string $newPassword): void
     {
         $user = $this->profileRepository->requireByIdWithProfile($userId);

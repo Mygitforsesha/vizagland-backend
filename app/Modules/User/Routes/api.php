@@ -8,6 +8,8 @@ Route::middleware('auth:sanctum')->group(function (): void {
     Route::get('profile', [ProfileController::class, 'show']);
     Route::put('profile', [ProfileController::class, 'update']);
     Route::patch('profile/password', [ProfileController::class, 'changePassword']);
+    Route::get('user/location', [ProfileController::class, 'location']);
+    Route::match(['post', 'put', 'patch'], 'user/location', [ProfileController::class, 'updateLocation']);
 });
 
 Route::middleware(['auth:sanctum', 'role:admin,super_admin'])->group(function (): void {

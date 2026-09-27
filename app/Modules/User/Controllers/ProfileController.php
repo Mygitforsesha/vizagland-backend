@@ -5,8 +5,10 @@ namespace App\Modules\User\Controllers;
 use App\Constants\HttpStatus;
 use App\Http\Controllers\Controller;
 use App\Modules\User\Http\Resources\ProfileSettingsResource;
+use App\Modules\User\Http\Resources\UserResource;
 use App\Modules\User\Requests\ChangeProfilePasswordRequest;
 use App\Modules\User\Requests\UpdateProfileRequest;
+use App\Modules\User\Requests\UpdateUserLocationRequest;
 use App\Modules\User\Services\ProfileService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -47,6 +49,38 @@ class ProfileController extends Controller
 
             return $this->errorResponse(
                 message: 'Failed to update profile. Please try again.',
+                statusCode: HttpStatus::INTERNAL_SERVER_ERROR,
+            );
+        }
+    }
+
+    public function location(Request $request): JsonResponse
+    {
+        $user = $this->profileService->show($request->user()->user_id);
+
+        return $this->successResponse(
+            data: new UserResource($user),
+            message: 'User location retrieved successfully.',
+        );
+    }
+
+    public function updateLocation(UpdateUserLocationRequest $request): JsonResponse
+    {
+        try {
+            $user = $this->profileService->updateLocation(
+                userId: $request->user()->user_id,
+                profileAttributes: $request->locationProfileAttributes(),
+            );
+
+            return $this->successResponse(
+                data: new UserResource($user),
+                message: 'User location updated successfully.',
+            );
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return $this->errorResponse(
+                message: 'Failed to update user location. Please try again.',
                 statusCode: HttpStatus::INTERNAL_SERVER_ERROR,
             );
         }

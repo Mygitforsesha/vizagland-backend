@@ -17,6 +17,31 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Property Media Disk
+    |--------------------------------------------------------------------------
+    |
+    | Disk used for new property image/document uploads. Use "minio" in
+    | production once MinIO credentials are configured. Keep "property_media"
+    | for local GoDaddy disk storage.
+    |
+    */
+
+    'property_media_disk' => env('PROPERTY_MEDIA_DISK', 'property_media'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | MinIO Signed URL Lifetime (minutes)
+    |--------------------------------------------------------------------------
+    |
+    | Used when the MinIO bucket is private (anonymous GetObject denied).
+    | Default: 24 hours.
+    |
+    */
+
+    'minio_signed_url_minutes' => (int) env('MINIO_SIGNED_URL_MINUTES', 60 * 24),
+
+    /*
+    |--------------------------------------------------------------------------
     | Public Web Root
     |--------------------------------------------------------------------------
     |
@@ -61,10 +86,25 @@ return [
             'report' => false,
         ],
 
+        // Legacy local GoDaddy web-root storage (also used as dual-read fallback)
         'property_media' => [
             'driver' => 'local',
             'root' => public_path('storage'),
             'url' => rtrim(env('APP_URL', 'http://localhost'), '/').'/storage',
+            'visibility' => 'public',
+            'throw' => false,
+            'report' => false,
+        ],
+
+        'minio' => [
+            'driver' => 's3',
+            'key' => env('AWS_ACCESS_KEY_ID'),
+            'secret' => env('AWS_SECRET_ACCESS_KEY'),
+            'region' => env('AWS_DEFAULT_REGION', 'ap-south-1'),
+            'bucket' => env('AWS_BUCKET'),
+            'url' => env('AWS_URL'),
+            'endpoint' => env('AWS_ENDPOINT'),
+            'use_path_style_endpoint' => env('AWS_USE_PATH_STYLE_ENDPOINT', true),
             'visibility' => 'public',
             'throw' => false,
             'report' => false,

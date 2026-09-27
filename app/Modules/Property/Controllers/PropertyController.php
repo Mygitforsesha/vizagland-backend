@@ -49,9 +49,14 @@ class PropertyController extends Controller
             sort: $request->sort(),
         );
 
-        return $this->successResponse(
+        $response = $this->successResponse(
             data: new PropertyMyListResource($properties),
         );
+
+        // Keep image and document URLs as normal https:// links in this response only.
+        $response->setEncodingOptions(JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+
+        return $response;
     }
 
     public function show(Request $request, int $property_id): JsonResponse

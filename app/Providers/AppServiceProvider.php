@@ -22,9 +22,13 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        config([
-            'filesystems.disks.property_media.root' => PublicWebRoot::storagePath(),
-        ]);
+        // Only remap the local legacy property_media root (GoDaddy web root).
+        // Do not override when uploads target MinIO/S3.
+        if (config('filesystems.disks.property_media.driver') === 'local') {
+            config([
+                'filesystems.disks.property_media.root' => PublicWebRoot::storagePath(),
+            ]);
+        }
 
         $this->app->booted(function (): void {
             Route::get('storage/{path}', [PublicStorageController::class, 'show'])
