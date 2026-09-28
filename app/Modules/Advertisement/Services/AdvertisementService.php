@@ -10,13 +10,13 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 use Throwable;
 
 class AdvertisementService
 {
     public function __construct(
         private readonly AdvertisementRepository $advertisementRepository,
+        private readonly AdvertisementMediaStorage $advertisementMediaStorage,
     ) {}
 
     /**
@@ -75,7 +75,7 @@ class AdvertisementService
 
         try {
             return DB::transaction(function () use ($attributes, $image, $user, &$uploadedPath) {
-                $uploadedPath = $image->store('advertisements', 'public');
+                $uploadedPath = $this->advertisementMediaStorage->store($image);
 
                 return $this->advertisementRepository->create([
                     ...$attributes,
@@ -85,7 +85,7 @@ class AdvertisementService
             });
         } catch (Throwable $exception) {
             if ($uploadedPath !== null) {
-                Storage::disk('public')->delete($uploadedPath);
+                $this->advertisementMediaStorage->delete($uploadedPath);
             }
 
             throw $exception;
@@ -104,21 +104,21 @@ class AdvertisementService
         try {
             return DB::transaction(function () use ($advertisement, $attributes, $image, &$uploadedPath, $previousPath) {
                 if ($image !== null) {
-                    $uploadedPath = $image->store('advertisements', 'public');
+                    $uploadedPath = $this->advertisementMediaStorage->store($image);
                     $attributes['advertisement_image_path'] = $uploadedPath;
                 }
 
                 $updatedAdvertisement = $this->advertisementRepository->update($advertisement, $attributes);
 
                 if ($uploadedPath !== null && $previousPath !== '') {
-                    Storage::disk('public')->delete($previousPath);
+                    $this->advertisementMediaStorage->delete($previousPath);
                 }
 
                 return $updatedAdvertisement;
             });
         } catch (Throwable $exception) {
             if ($uploadedPath !== null) {
-                Storage::disk('public')->delete($uploadedPath);
+                $this->advertisementMediaStorage->delete($uploadedPath);
             }
 
             throw $exception;
@@ -135,7 +135,7 @@ class AdvertisementService
         });
 
         if ($imagePath !== '') {
-            Storage::disk('public')->delete($imagePath);
+            $this->advertisementMediaStorage->delete($imagePath);
         }
     }
 }

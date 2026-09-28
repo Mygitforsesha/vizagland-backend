@@ -20,9 +20,10 @@ return [
     | Property Media Disk
     |--------------------------------------------------------------------------
     |
-    | Disk used for new property image/document uploads. Use "minio" in
-    | production once MinIO credentials are configured. Keep "property_media"
-    | for local GoDaddy disk storage.
+    | Disk used for new property image/document uploads and advertisement
+    | images. Use "minio" in production once MinIO credentials are configured.
+    | Keep "property_media" for local GoDaddy property storage. Advertisements
+    | stay on the public disk unless this value is "minio".
     |
     */
 

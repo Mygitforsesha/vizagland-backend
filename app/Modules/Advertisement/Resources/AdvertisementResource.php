@@ -3,9 +3,9 @@
 namespace App\Modules\Advertisement\Resources;
 
 use App\Modules\Advertisement\Models\Advertisement;
+use App\Modules\Advertisement\Services\AdvertisementMediaStorage;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
-use Illuminate\Support\Facades\Storage;
 
 /** @mixin Advertisement */
 class AdvertisementResource extends JsonResource
@@ -38,7 +38,7 @@ class AdvertisementResource extends JsonResource
             'advertisement_category' => $this->advertisement_category?->value ?? 'general',
             'advertisement_category_label' => $this->advertisement_category?->label() ?? 'General Ads',
             'advertisement_image_path' => $this->advertisement_image_path,
-            'advertisement_image_url' => Storage::disk('public')->url($this->advertisement_image_path),
+            'advertisement_image_url' => app(AdvertisementMediaStorage::class)->url($this->advertisement_image_path),
             'advertisement_redirect_url' => $this->advertisement_redirect_url,
             'advertisement_display_order' => $this->advertisement_display_order,
             'advertisement_start_date' => $this->advertisement_start_date?->toDateString(),
