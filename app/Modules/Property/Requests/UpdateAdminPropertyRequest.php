@@ -16,6 +16,23 @@ class UpdateAdminPropertyRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        $owners = $this->input('property_owners');
+
+        if (! is_string($owners)) {
+            return;
+        }
+
+        $decoded = json_decode($owners, true);
+
+        if (is_array($decoded)) {
+            $this->merge([
+                'property_owners' => $decoded,
+            ]);
+        }
+    }
+
     /**
      * @return array<string, mixed>
      */
@@ -81,7 +98,11 @@ class UpdateAdminPropertyRequest extends FormRequest
             'property_latitude' => ['sometimes', 'nullable', 'numeric', 'between:-90,90'],
             'property_longitude' => ['sometimes', 'nullable', 'numeric', 'between:-180,180'],
 
-            // Owner
+            // Owner. The list replaces every saved owner. The single fields still update the first owner.
+            'property_owners' => ['sometimes', 'nullable', 'array', 'max:20'],
+            'property_owners.*.property_owner_name' => ['nullable', 'string', 'max:255'],
+            'property_owners.*.property_owner_phone' => ['nullable', 'string', 'max:20'],
+            'property_owners.*.property_owner_email' => ['nullable', 'email', 'max:255'],
             'property_owner_name' => ['sometimes', 'nullable', 'string', 'max:255'],
             'property_owner_phone' => ['sometimes', 'nullable', 'string', 'max:20'],
             'property_owner_email' => ['sometimes', 'nullable', 'email', 'max:255'],
@@ -151,7 +172,7 @@ class UpdateAdminPropertyRequest extends FormRequest
         $attributes = [];
 
         foreach (array_keys($this->rules()) as $field) {
-            if (in_array($field, $prohibited, true)) {
+            if (in_array($field, $prohibited, true) || str_starts_with($field, 'property_owners')) {
                 continue;
             }
 
@@ -171,5 +192,58 @@ class UpdateAdminPropertyRequest extends FormRequest
         }
 
         return $attributes;
+    }
+
+    /**
+     * Null means the owner list was not sent and should stay unchanged.
+     *
+     * @return list<array{property_owner_name: ?string, property_owner_phone: ?string, property_owner_email: ?string}>|null
+     */
+    public function propertyOwners(): ?array
+    {
+        if (! $this->exists('property_owners')) {
+            return null;
+        }
+
+        $owners = $this->input('property_owners');
+
+        if (! is_array($owners)) {
+            return [];
+        }
+
+        $normalized = [];
+
+        foreach ($owners as $owner) {
+            if (! is_array($owner)) {
+                continue;
+            }
+
+            $name = $this->nullableOwnerString($owner['property_owner_name'] ?? null);
+            $phone = $this->nullableOwnerString($owner['property_owner_phone'] ?? null);
+            $email = $this->nullableOwnerString($owner['property_owner_email'] ?? null);
+
+            if ($name === null && $phone === null && $email === null) {
+                continue;
+            }
+
+            $normalized[] = [
+                'property_owner_name' => $name,
+                'property_owner_phone' => $phone,
+                'property_owner_email' => $email,
+            ];
+        }
+
+        return $normalized;
+    }
+
+    private function nullableOwnerString(mixed $value): ?string
+    {
+        if (! is_string($value) && ! is_numeric($value)) {
+            return null;
+        }
+
+        $trimmed = trim((string) $value);
+
+        return $trimmed === '' ? null : $trimmed;
     }
 }

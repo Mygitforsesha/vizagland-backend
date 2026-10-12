@@ -233,8 +233,7 @@ trait ValidatesPropertyCreatePayload
             $attributes['property_posting_location'] = $postingLocation;
         }
 
-        return app(PropertyFieldConfigurationService::class)
-            ->filterInactiveFieldAttributes($attributes);
+        return $attributes;
     }
 
     /**

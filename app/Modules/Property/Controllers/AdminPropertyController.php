@@ -68,6 +68,7 @@ class AdminPropertyController extends Controller
             $property = $this->adminPropertyService->update(
                 propertyId: $property_id,
                 attributes: $request->updateAttributes(),
+                owners: $request->propertyOwners(),
             );
 
             return $this->successResponse(

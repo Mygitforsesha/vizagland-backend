@@ -23,11 +23,17 @@ class AdvertisementMediaStorage
 
     public function store(UploadedFile $file): string
     {
-        if ($this->usesCloudDisk()) {
-            return $file->storePublicly(self::DIRECTORY, $this->diskName());
-        }
+        return $this->storeIn(self::DIRECTORY, $file);
+    }
 
-        return $file->store(self::DIRECTORY, self::LEGACY_DISK);
+    public function storeImage(UploadedFile $file): string
+    {
+        return $this->storeIn(self::DIRECTORY.'/images', $file);
+    }
+
+    public function storeDocument(UploadedFile $file): string
+    {
+        return $this->storeIn(self::DIRECTORY.'/documents', $file);
     }
 
     public function delete(?string $path): void
@@ -63,6 +69,15 @@ class AdvertisementMediaStorage
     public function usesCloudDisk(): bool
     {
         return $this->diskName() === self::CLOUD_DISK;
+    }
+
+    private function storeIn(string $directory, UploadedFile $file): string
+    {
+        if ($this->usesCloudDisk()) {
+            return $file->storePublicly($directory, $this->diskName());
+        }
+
+        return $file->store($directory, self::LEGACY_DISK);
     }
 
     private function disk(): Filesystem

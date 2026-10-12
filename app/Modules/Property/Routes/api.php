@@ -44,7 +44,7 @@ Route::middleware(['auth:sanctum', 'role:admin,super_admin,employee'])->group(fu
     Route::get('admin/properties', [AdminPropertyController::class, 'index']);
     Route::get('admin/property-search-history', [PropertySearchController::class, 'history']);
     Route::get('admin/properties/{property_id}', [AdminPropertyController::class, 'show']);
-    Route::put('admin/properties/{property_id}', [AdminPropertyController::class, 'update']);
+    Route::match(['put', 'post'], 'admin/properties/{property_id}', [AdminPropertyController::class, 'update']);
     Route::post('admin/properties/{property_id}/approve', [AdminPropertyActionController::class, 'approve']);
     Route::post('admin/properties/{property_id}/reject', [AdminPropertyActionController::class, 'reject']);
     Route::post('admin/properties/{property_id}/archive', [AdminPropertyActionController::class, 'archive']);

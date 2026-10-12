@@ -4,6 +4,7 @@ namespace App\Modules\PublicSite\Resources;
 
 use App\Modules\Property\Models\Property;
 use App\Modules\Property\Resources\PropertyImageResource;
+use App\Modules\Property\Resources\PropertyOwnerResource;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -41,6 +42,7 @@ class PublicPropertyDetailsResource extends JsonResource
             'property_latitude' => $this->property_latitude,
             'property_longitude' => $this->property_longitude,
             'property_published_at' => $this->property_published_at?->toIso8601String(),
+            'property_owners' => PropertyOwnerResource::listFor($this->resource),
             'images' => PropertyImageResource::collection($this->whenLoaded('images')),
         ];
     }

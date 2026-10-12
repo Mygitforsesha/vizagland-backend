@@ -18,6 +18,7 @@ class OtherServiceApiTest extends TestCase
         parent::setUp();
 
         Schema::dropIfExists('personal_access_tokens');
+        Schema::dropIfExists('other_service_whatsapp_numbers');
         Schema::dropIfExists('other_services');
         Schema::dropIfExists('users');
 
@@ -48,6 +49,9 @@ class OtherServiceApiTest extends TestCase
 
         $migration = require database_path('migrations/2026_09_19_200000_create_other_services_table.php');
         $migration->up();
+
+        $whatsappMigration = require database_path('migrations/2026_10_10_120000_create_other_service_whatsapp_numbers_table.php');
+        $whatsappMigration->up();
     }
 
     public function test_seeder_is_idempotent_and_creates_twelve_services(): void
@@ -169,6 +173,49 @@ class OtherServiceApiTest extends TestCase
             'other_service_name' => 'Documentation',
             'other_service_slug' => 'documentation-2',
         ])->assertStatus(422);
+    }
+
+    public function test_admin_can_save_multiple_whatsapp_numbers_with_one_primary(): void
+    {
+        Sanctum::actingAs($this->makeAdmin());
+
+        $create = $this->postJson('/api/admin/other-services', [
+            'other_service_name' => 'Village Map',
+            'other_service_whatsapp_numbers' => [
+                [
+                    'other_service_whatsapp_number' => '9876543210',
+                    'other_service_whatsapp_number_is_primary' => false,
+                ],
+                [
+                    'other_service_whatsapp_number' => '+919876543211',
+                    'other_service_whatsapp_number_is_primary' => true,
+                ],
+            ],
+        ]);
+
+        $create->assertCreated()
+            ->assertJsonPath('data.other_service_whatsapp_numbers.0.other_service_whatsapp_number', '+919876543211')
+            ->assertJsonPath('data.other_service_whatsapp_numbers.0.other_service_whatsapp_number_is_primary', true)
+            ->assertJsonCount(2, 'data.other_service_whatsapp_numbers');
+
+        $id = (int) $create->json('data.other_service_id');
+
+        $this->putJson("/api/admin/other-services/{$id}", [
+            'other_service_whatsapp_numbers' => [
+                [
+                    'other_service_whatsapp_number' => '9000000001',
+                    'other_service_whatsapp_number_is_primary' => true,
+                ],
+                [
+                    'other_service_whatsapp_number' => '9000000002',
+                    'other_service_whatsapp_number_is_primary' => true,
+                ],
+            ],
+        ])->assertStatus(422);
+
+        $this->getJson('/api/other-services')
+            ->assertOk()
+            ->assertJsonPath('data.0.other_service_whatsapp_numbers.0.other_service_whatsapp_number_is_primary', true);
     }
 
     public function test_status_accepts_is_active_alias(): void

@@ -3,7 +3,6 @@
 namespace App\Modules\Advertisement\Resources;
 
 use App\Modules\Advertisement\Models\Advertisement;
-use App\Modules\Advertisement\Services\AdvertisementMediaStorage;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -28,6 +27,8 @@ class AdvertisementPublicResource extends JsonResource
             $types = array_filter(array_map('trim', explode(',', $typeVal)));
         }
 
+        $media = AdvertisementMediaFields::forAdvertisement($this->resource);
+
         return [
             'advertisement_id' => $this->advertisement_id,
             'advertisement_title' => $this->advertisement_title,
@@ -37,8 +38,14 @@ class AdvertisementPublicResource extends JsonResource
             'advertisement_types' => $types ?? [],
             'advertisement_category' => $this->advertisement_category?->value ?? 'general',
             'advertisement_category_label' => $this->advertisement_category?->label() ?? 'General Ads',
-            'advertisement_image_url' => app(AdvertisementMediaStorage::class)->url($this->advertisement_image_path),
+            'advertisement_image_url' => $media['advertisement_image_url'],
+            'advertisement_images' => $media['advertisement_images'],
+            'advertisement_documents' => $media['advertisement_documents'],
+            'advertisement_youtube_video_links' => $media['advertisement_youtube_video_links'],
+            'advertisement_location_links' => $media['advertisement_location_links'],
             'advertisement_redirect_url' => $this->advertisement_redirect_url,
+            'advertisement_whatsapp_numbers' => array_values($this->advertisement_whatsapp_numbers ?? []),
+            'advertisement_email' => $this->advertisement_email,
             'advertisement_display_order' => $this->advertisement_display_order,
             'advertisement_village_id' => $this->advertisement_village_id,
             'village' => $this->village ? [

@@ -195,8 +195,8 @@ private const PUBLIC_SECTIONS = [
             $validationPath = $this->validationPathFor($configuration);
 
             if (! $configuration->property_field_is_active) {
-                // Soft-ignore: do not reject payload keys for inactive fields.
-                // Values are stripped later by filterInactiveFieldAttributes().
+                // Inactive fields stay off the public form and are not required.
+                // A value the client still sends is stored and returned by the property APIs.
                 continue;
             }
 

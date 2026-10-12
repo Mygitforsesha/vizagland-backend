@@ -182,6 +182,13 @@ class Property extends Model
         return $this->hasMany(PropertyContactNumber::class, 'property_id', 'property_id');
     }
 
+    public function owners(): HasMany
+    {
+        return $this->hasMany(PropertyOwner::class, 'property_id', 'property_id')
+            ->orderBy('property_owner_sort_order')
+            ->orderBy('property_owner_id');
+    }
+
     public function reviews(): HasMany
     {
         return $this->hasMany(PropertyReview::class, 'property_id', 'property_id');

@@ -68,6 +68,7 @@ class AdminPropertyRepository
                 'images' => fn ($query) => $query->orderBy('property_image_sort_order'),
                 'documents' => fn ($query) => $query->orderBy('created_at'),
                 'contactNumbers' => fn ($query) => $query->orderBy('property_contact_number_id'),
+                'owners',
             ])
             ->where('property_id', $propertyId)
             ->first();
@@ -114,6 +115,17 @@ class AdminPropertyRepository
 
                             if ($digitLike !== null) {
                                 $nested->orWhere('user_phone', 'like', $digitLike);
+                            }
+                        });
+                    })
+                    ->orWhereHas('owners', function (Builder $ownerQuery) use ($like, $digitLike): void {
+                        $ownerQuery->where(function (Builder $nested) use ($like, $digitLike): void {
+                            $nested->where('property_owner_name', 'like', $like)
+                                ->orWhere('property_owner_phone', 'like', $like)
+                                ->orWhere('property_owner_email', 'like', $like);
+
+                            if ($digitLike !== null) {
+                                $nested->orWhere('property_owner_phone', 'like', $digitLike);
                             }
                         });
                     })

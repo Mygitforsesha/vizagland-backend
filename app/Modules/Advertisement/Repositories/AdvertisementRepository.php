@@ -16,7 +16,7 @@ class AdvertisementRepository
     public function paginateAdmin(array $filters, int $perPage): LengthAwarePaginator
     {
         $query = Advertisement::query()
-            ->with('village')
+            ->with($this->detailRelations())
             ->orderBy('advertisement_display_order')
             ->orderByDesc('advertisement_id');
 
@@ -32,7 +32,7 @@ class AdvertisementRepository
     public function listActivePublic(array $filters): Collection
     {
         $query = $this->activePublicQuery()
-            ->with('village')
+            ->with($this->detailRelations())
             ->orderBy('advertisement_display_order')
             ->orderByDesc('advertisement_id');
 
@@ -58,7 +58,7 @@ class AdvertisementRepository
                     ->orWhereJsonContains('advertisement_types', 'village_wise');
             })
             ->whereNotNull('advertisement_village_id')
-            ->with('village')
+            ->with($this->detailRelations())
             ->orderBy('advertisement_display_order')
             ->orderByDesc('advertisement_id')
             ->get();
@@ -73,7 +73,7 @@ class AdvertisementRepository
                     ->orWhereJsonContains('advertisement_types', 'general')
                     ->orWhereNull('advertisement_category');
             })
-            ->with('village')
+            ->with($this->detailRelations())
             ->orderBy('advertisement_display_order')
             ->orderByDesc('advertisement_id')
             ->get();
@@ -87,7 +87,7 @@ class AdvertisementRepository
                     ->orWhereJsonContains('advertisement_types', 'latest_ads')
                     ->orWhereJsonContains('advertisement_types', 'latest');
             })
-            ->with('village')
+            ->with($this->detailRelations())
             ->orderByDesc('advertisement_id')
             ->get();
 
@@ -102,14 +102,14 @@ class AdvertisementRepository
     {
         return $this->activePublicQuery()
             ->where('advertisement_id', $advertisementId)
-            ->with('village')
+            ->with($this->detailRelations())
             ->first();
     }
 
     public function findById(int $advertisementId): ?Advertisement
     {
         return Advertisement::query()
-            ->with('village')
+            ->with($this->detailRelations())
             ->find($advertisementId);
     }
 
@@ -120,7 +120,7 @@ class AdvertisementRepository
     {
         $advertisement = Advertisement::query()->create($attributes);
 
-        return $advertisement->fresh('village');
+        return $advertisement->fresh($this->detailRelations());
     }
 
     /**
@@ -130,7 +130,7 @@ class AdvertisementRepository
     {
         $advertisement->update($attributes);
 
-        return $advertisement->fresh('village');
+        return $advertisement->fresh($this->detailRelations());
     }
 
     public function delete(Advertisement $advertisement): void
@@ -139,10 +139,17 @@ class AdvertisementRepository
     }
 
     /**
-     * Build the base active/published query scope.
-     *
-     * @return Builder<Advertisement>
+     * @return array<string, mixed>
      */
+    private function detailRelations(): array
+    {
+        return [
+            'village',
+            'images',
+            'documents',
+        ];
+    }
+
     private function activePublicQuery(): Builder
     {
         return Advertisement::query()

@@ -17,6 +17,8 @@ class PropertyDetailsResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        $propertyOwners = PropertyOwnerResource::listFor($this->resource);
+
         return [
             'property_id' => $this->property_id,
             'property_parent_property_id' => $this->property_parent_property_id,
@@ -85,11 +87,12 @@ class PropertyDetailsResource extends JsonResource
                 'property_document_year' => $this->property_document_year,
                 'property_registration_office_area' => $this->property_registration_office_area,
             ],
-            'property_owner' => [
-                'property_owner_name' => $this->property_owner_name,
-                'property_owner_phone' => $this->property_owner_phone,
-                'property_owner_email' => $this->property_owner_email,
+            'property_owner' => $propertyOwners[0] ?? [
+                'property_owner_name' => null,
+                'property_owner_phone' => null,
+                'property_owner_email' => null,
             ],
+            'property_owners' => $propertyOwners,
             'property_other_services' => [
                 'property_service_name' => $this->property_other_service_name,
                 'property_youtube_video_link' => $this->property_youtube_video_link,

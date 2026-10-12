@@ -17,6 +17,7 @@ class PublicPropertyRepository
         return Property::query()
             ->with([
                 'images' => fn ($query) => $query->orderBy('property_image_sort_order'),
+                'owners',
             ])
             ->where('property_id', $propertyId)
             ->where('property_record_type', PropertyRecordType::VizaglandCopy)

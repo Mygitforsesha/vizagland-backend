@@ -3,6 +3,7 @@
 namespace App\Modules\OtherService\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class OtherService extends Model
 {
@@ -32,5 +33,12 @@ class OtherService extends Model
             'other_service_sort_order' => 'integer',
             'other_service_is_active' => 'boolean',
         ];
+    }
+
+    public function whatsappNumbers(): HasMany
+    {
+        return $this->hasMany(OtherServiceWhatsappNumber::class, 'other_service_id', 'other_service_id')
+            ->orderByDesc('other_service_whatsapp_number_is_primary')
+            ->orderBy('other_service_whatsapp_number_sort_order');
     }
 }

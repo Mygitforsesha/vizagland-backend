@@ -7,6 +7,7 @@ use App\Modules\OtherService\Repositories\OtherServiceRepository;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class OtherServiceService
@@ -44,8 +45,9 @@ class OtherServiceService
 
     /**
      * @param  array<string, mixed>  $attributes
+     * @param  list<array{other_service_whatsapp_number: string, other_service_whatsapp_number_is_primary: bool, other_service_whatsapp_number_sort_order: int}>|null  $whatsappNumbers
      */
-    public function create(array $attributes): OtherService
+    public function create(array $attributes, ?array $whatsappNumbers = null): OtherService
     {
         $name = (string) $attributes['other_service_name'];
         $slug = $attributes['other_service_slug'] ?? null;
@@ -64,13 +66,19 @@ class OtherServiceService
         $attributes['other_service_sort_order'] = (int) ($attributes['other_service_sort_order'] ?? 0);
         $attributes['other_service_is_active'] = (bool) ($attributes['other_service_is_active'] ?? true);
 
-        return $this->otherServiceRepository->create($attributes);
+        return DB::transaction(function () use ($attributes, $whatsappNumbers) {
+            $otherService = $this->otherServiceRepository->create($attributes);
+            $this->syncWhatsappNumbers($otherService, $whatsappNumbers);
+
+            return $otherService->fresh('whatsappNumbers');
+        });
     }
 
     /**
      * @param  array<string, mixed>  $attributes
+     * @param  list<array{other_service_whatsapp_number: string, other_service_whatsapp_number_is_primary: bool, other_service_whatsapp_number_sort_order: int}>|null  $whatsappNumbers
      */
-    public function update(int $otherServiceId, array $attributes): OtherService
+    public function update(int $otherServiceId, array $attributes, ?array $whatsappNumbers = null): OtherService
     {
         $otherService = $this->show($otherServiceId);
 
@@ -99,7 +107,24 @@ class OtherServiceService
             $attributes['other_service_is_active'] = (bool) $attributes['other_service_is_active'];
         }
 
-        return $this->otherServiceRepository->update($otherService, $attributes);
+        return DB::transaction(function () use ($otherService, $attributes, $whatsappNumbers) {
+            $updated = $this->otherServiceRepository->update($otherService, $attributes);
+            $this->syncWhatsappNumbers($updated, $whatsappNumbers);
+
+            return $updated->fresh('whatsappNumbers');
+        });
+    }
+
+    /**
+     * @param  list<array{other_service_whatsapp_number: string, other_service_whatsapp_number_is_primary: bool, other_service_whatsapp_number_sort_order: int}>|null  $whatsappNumbers
+     */
+    private function syncWhatsappNumbers(OtherService $otherService, ?array $whatsappNumbers): void
+    {
+        if ($whatsappNumbers === null) {
+            return;
+        }
+
+        $this->otherServiceRepository->syncWhatsappNumbers($otherService, $whatsappNumbers);
     }
 
     public function updateStatus(int $otherServiceId, bool $isActive): OtherService

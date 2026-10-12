@@ -3,6 +3,7 @@
 namespace App\Modules\OtherService\Repositories;
 
 use App\Modules\OtherService\Models\OtherService;
+use App\Modules\OtherService\Models\OtherServiceWhatsappNumber;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -14,7 +15,7 @@ class OtherServiceRepository
      */
     public function paginateAdmin(array $filters, int $perPage, string $sortBy, string $sortDirection): LengthAwarePaginator
     {
-        $query = OtherService::query();
+        $query = OtherService::query()->with('whatsappNumbers');
 
         $this->applyAdminFilters($query, $filters);
 
@@ -33,6 +34,7 @@ class OtherServiceRepository
     public function listActivePublic(): Collection
     {
         return OtherService::query()
+            ->with('whatsappNumbers')
             ->where('other_service_is_active', true)
             ->orderBy('other_service_sort_order')
             ->orderBy('other_service_name')
@@ -41,7 +43,7 @@ class OtherServiceRepository
 
     public function findById(int $otherServiceId): ?OtherService
     {
-        return OtherService::query()->find($otherServiceId);
+        return OtherService::query()->with('whatsappNumbers')->find($otherServiceId);
     }
 
     public function findBySlug(string $slug): ?OtherService
@@ -56,7 +58,7 @@ class OtherServiceRepository
      */
     public function create(array $attributes): OtherService
     {
-        return OtherService::query()->create($attributes);
+        return OtherService::query()->create($attributes)->fresh('whatsappNumbers');
     }
 
     /**
@@ -66,14 +68,14 @@ class OtherServiceRepository
     {
         $otherService->update($attributes);
 
-        return $otherService->fresh();
+        return $otherService->fresh('whatsappNumbers');
     }
 
     public function deactivate(OtherService $otherService): OtherService
     {
         $otherService->update(['other_service_is_active' => false]);
 
-        return $otherService->fresh();
+        return $otherService->fresh('whatsappNumbers');
     }
 
     public function slugExists(string $slug, ?int $ignoreId = null): bool
@@ -85,6 +87,21 @@ class OtherServiceRepository
         }
 
         return $query->exists();
+    }
+
+    /**
+     * @param  list<array{other_service_whatsapp_number: string, other_service_whatsapp_number_is_primary: bool, other_service_whatsapp_number_sort_order: int}>  $numbers
+     */
+    public function syncWhatsappNumbers(OtherService $otherService, array $numbers): void
+    {
+        $otherService->whatsappNumbers()->delete();
+
+        foreach ($numbers as $number) {
+            OtherServiceWhatsappNumber::query()->create([
+                'other_service_id' => $otherService->other_service_id,
+                ...$number,
+            ]);
+        }
     }
 
     /**

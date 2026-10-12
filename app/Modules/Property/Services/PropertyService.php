@@ -10,7 +10,9 @@ use App\Modules\Property\Enums\PropertyRecordType;
 use App\Modules\Property\Enums\PropertySource;
 use App\Modules\Property\Enums\PropertyStatus;
 use App\Modules\Property\Models\Property;
+use App\Modules\Property\Models\PropertyOwner;
 use App\Modules\Property\Repositories\PropertyRepository;
+use App\Modules\Property\Support\DefaultPropertyOwners;
 use App\Modules\User\Enums\UserRole;
 use App\Modules\User\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -297,6 +299,10 @@ class PropertyService
                     [$originalProperty, $vizaglandCopyProperty],
                     $contactNumbers,
                 );
+                $this->storeDefaultOwnersForProperties([
+                    $originalProperty,
+                    $vizaglandCopyProperty,
+                ]);
 
                 $result = [
                     'original_property' => $originalProperty->fresh(['images', 'documents', 'contactNumbers']),
@@ -547,6 +553,26 @@ class PropertyService
         }
 
         return count($documents);
+    }
+
+    /**
+     * @param  list<Property>  $properties
+     */
+    private function storeDefaultOwnersForProperties(array $properties): void
+    {
+        $defaults = DefaultPropertyOwners::list();
+
+        foreach ($properties as $property) {
+            foreach ($defaults as $index => $owner) {
+                PropertyOwner::query()->create([
+                    'property_id' => $property->property_id,
+                    'property_owner_name' => $owner['property_owner_name'],
+                    'property_owner_phone' => $owner['property_owner_phone'],
+                    'property_owner_email' => $owner['property_owner_email'],
+                    'property_owner_sort_order' => $index,
+                ]);
+            }
+        }
     }
 
     /**

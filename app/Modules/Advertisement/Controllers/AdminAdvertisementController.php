@@ -64,7 +64,8 @@ class AdminAdvertisementController extends Controller
         try {
             $advertisement = $this->advertisementService->create(
                 attributes: $request->advertisementAttributes(),
-                image: $request->file('advertisement_image'),
+                images: $request->uploadedImages(),
+                documents: $request->uploadedDocuments(),
                 user: $request->user(),
             );
 
@@ -89,7 +90,8 @@ class AdminAdvertisementController extends Controller
             $advertisement = $this->advertisementService->update(
                 advertisementId: $advertisement_id,
                 attributes: $request->advertisementAttributes(),
-                image: $request->file('advertisement_image'),
+                images: $request->uploadedImages(),
+                documents: $request->uploadedDocuments(),
             );
 
             return $this->successResponse(

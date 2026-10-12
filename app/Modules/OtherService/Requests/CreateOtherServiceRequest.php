@@ -2,11 +2,13 @@
 
 namespace App\Modules\OtherService\Requests;
 
+use App\Modules\OtherService\Requests\Concerns\ValidatesOtherServiceWhatsappNumbers;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 class CreateOtherServiceRequest extends FormRequest
 {
+    use ValidatesOtherServiceWhatsappNumbers;
     public function authorize(): bool
     {
         return true;
@@ -35,6 +37,8 @@ class CreateOtherServiceRequest extends FormRequest
         if ($input !== []) {
             $this->merge($input);
         }
+
+        $this->prepareWhatsappNumbers();
     }
 
     /**
@@ -59,6 +63,7 @@ class CreateOtherServiceRequest extends FormRequest
             'other_service_icon' => ['nullable', 'string', 'max:255'],
             'other_service_sort_order' => ['nullable', 'integer', 'min:0'],
             'other_service_is_active' => ['sometimes', 'boolean'],
+            ...$this->whatsappNumberRules(),
         ];
     }
 

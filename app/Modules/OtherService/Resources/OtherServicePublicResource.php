@@ -21,6 +21,9 @@ class OtherServicePublicResource extends JsonResource
             'other_service_description' => $this->other_service_description,
             'other_service_icon' => $this->other_service_icon,
             'other_service_sort_order' => $this->other_service_sort_order,
+            'other_service_whatsapp_numbers' => OtherServiceWhatsappNumberResource::collection(
+                $this->whenLoaded('whatsappNumbers'),
+            ),
         ];
     }
 }

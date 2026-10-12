@@ -8,6 +8,7 @@ use App\Modules\MasterLocation\Models\MasterLocation;
 use App\Modules\User\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Advertisement extends Model
 {
@@ -30,6 +31,8 @@ class Advertisement extends Model
         'advertisement_category',
         'advertisement_image_path',
         'advertisement_redirect_url',
+        'advertisement_whatsapp_numbers',
+        'advertisement_email',
         'advertisement_display_order',
         'advertisement_start_date',
         'advertisement_end_date',
@@ -39,6 +42,8 @@ class Advertisement extends Model
         'property_category',
         'property_location',
         'property_details',
+        'advertisement_youtube_video_links',
+        'advertisement_location_links',
     ];
 
     protected function casts(): array
@@ -46,6 +51,7 @@ class Advertisement extends Model
         return [
             'advertisement_types' => 'array',
             'advertisement_category' => AdvertisementCategory::class,
+            'advertisement_whatsapp_numbers' => 'array',
             'advertisement_display_order' => 'integer',
             'advertisement_start_date' => 'date',
             'advertisement_end_date' => 'date',
@@ -53,7 +59,22 @@ class Advertisement extends Model
             'advertisement_village_id' => 'integer',
             'property_location' => 'array',
             'property_details' => 'array',
+            'advertisement_youtube_video_links' => 'array',
+            'advertisement_location_links' => 'array',
         ];
+    }
+
+    public function images(): HasMany
+    {
+        return $this->hasMany(AdvertisementImage::class, 'advertisement_id', 'advertisement_id')
+            ->orderBy('advertisement_image_sort_order')
+            ->orderBy('advertisement_image_id');
+    }
+
+    public function documents(): HasMany
+    {
+        return $this->hasMany(AdvertisementDocument::class, 'advertisement_id', 'advertisement_id')
+            ->orderBy('advertisement_document_id');
     }
 
     public function createdBy(): BelongsTo

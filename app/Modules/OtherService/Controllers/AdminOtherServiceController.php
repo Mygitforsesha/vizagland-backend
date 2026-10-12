@@ -67,6 +67,7 @@ class AdminOtherServiceController extends Controller
         try {
             $otherService = $this->otherServiceService->create(
                 attributes: $request->otherServiceAttributes(),
+                whatsappNumbers: $request->whatsappNumbers(),
             );
 
             return $this->successResponse(
@@ -90,6 +91,7 @@ class AdminOtherServiceController extends Controller
             $otherService = $this->otherServiceService->update(
                 otherServiceId: $other_service_id,
                 attributes: $request->otherServiceAttributes(),
+                whatsappNumbers: $request->whatsappNumbers(),
             );
 
             return $this->successResponse(

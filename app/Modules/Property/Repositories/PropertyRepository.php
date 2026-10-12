@@ -40,6 +40,7 @@ class PropertyRepository
                 'images' => fn ($query) => $query->orderBy('property_image_sort_order'),
                 'documents' => fn ($query) => $query->orderBy('created_at'),
                 'contactNumbers' => fn ($query) => $query->orderBy('property_contact_number_id'),
+                'owners',
             ])
             ->where('property_id', $propertyId)
             ->first();

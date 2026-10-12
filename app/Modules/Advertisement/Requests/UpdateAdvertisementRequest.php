@@ -3,12 +3,15 @@
 namespace App\Modules\Advertisement\Requests;
 
 use App\Modules\Advertisement\Enums\AdvertisementCategory;
+use App\Modules\Advertisement\Requests\Concerns\NormalizesAdvertisementMedia;
 use App\Modules\MasterLocation\Models\MasterLocation;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 class UpdateAdvertisementRequest extends FormRequest
 {
+    use NormalizesAdvertisementMedia;
+
     public function authorize(): bool
     {
         return true;
@@ -71,9 +74,59 @@ class UpdateAdvertisementRequest extends FormRequest
             }
         }
 
+        $whatsappNumbers = $this->input('advertisement_whatsapp_numbers');
+
+        if (is_string($whatsappNumbers)) {
+            $decoded = json_decode($whatsappNumbers, true);
+            $whatsappNumbers = is_array($decoded) ? $decoded : [$whatsappNumbers];
+        }
+
+        if (! is_array($whatsappNumbers) && $this->exists('advertisement_whatsapp_number')) {
+            $single = $this->input('advertisement_whatsapp_number');
+            $whatsappNumbers = is_string($single) && trim($single) !== '' ? [$single] : [];
+        }
+
+        if (is_array($whatsappNumbers)) {
+            $normalizedNumbers = [];
+
+            foreach ($whatsappNumbers as $number) {
+                if (! is_string($number) && ! is_numeric($number)) {
+                    continue;
+                }
+
+                $value = preg_replace('/[\s\-]/', '', trim((string) $number)) ?? '';
+
+                if ($value !== '') {
+                    $normalizedNumbers[] = $value;
+                }
+            }
+
+            $input['advertisement_whatsapp_numbers'] = array_values(array_unique($normalizedNumbers));
+        }
+
+        if ($this->has('advertisement_email') && is_string($this->input('advertisement_email'))) {
+            $email = trim($this->input('advertisement_email'));
+            $input['advertisement_email'] = $email === '' ? null : $email;
+        }
+
         if (! empty($input)) {
             $this->merge($input);
         }
+
+        $this->mergeAdvertisementMediaInput();
+    }
+
+    public function withValidator($validator): void
+    {
+        $validator->after(function ($validator): void {
+            if (count($this->uploadedImages()) > 30) {
+                $validator->errors()->add('advertisement_images', 'An advertisement can have at most 30 images.');
+            }
+
+            if (count($this->uploadedDocuments()) > 30) {
+                $validator->errors()->add('advertisement_documents', 'An advertisement can have at most 30 documents.');
+            }
+        });
     }
 
     /**
@@ -88,8 +141,11 @@ class UpdateAdvertisementRequest extends FormRequest
             'advertisement_type' => ['nullable'],
             'advertisement_category' => ['nullable', 'string'],
             'category' => ['nullable', 'string'],
-            'advertisement_image' => ['nullable', 'file', 'mimes:jpg,jpeg,png,webp,gif', 'max:10240'],
+            ...$this->advertisementMediaRules(),
             'advertisement_redirect_url' => ['nullable', 'string', 'max:2048'],
+            'advertisement_whatsapp_numbers' => ['nullable', 'array', 'max:10'],
+            'advertisement_whatsapp_numbers.*' => ['required', 'string', 'regex:/^\+?[0-9]{10,15}$/', 'distinct'],
+            'advertisement_email' => ['nullable', 'email', 'max:255'],
             'advertisement_display_order' => ['nullable', 'integer', 'min:0'],
             'advertisement_start_date' => ['nullable', 'date'],
             'advertisement_end_date' => ['nullable', 'date', 'after_or_equal:advertisement_start_date'],
@@ -149,6 +205,17 @@ class UpdateAdvertisementRequest extends FormRequest
             $attributes['advertisement_redirect_url'] = $this->input('advertisement_redirect_url');
         }
 
+        if ($this->exists('advertisement_whatsapp_numbers')) {
+            $numbers = $this->input('advertisement_whatsapp_numbers');
+            $attributes['advertisement_whatsapp_numbers'] = is_array($numbers) && $numbers !== []
+                ? array_values($numbers)
+                : null;
+        }
+
+        if ($this->exists('advertisement_email')) {
+            $attributes['advertisement_email'] = $this->input('advertisement_email');
+        }
+
         if ($this->has('advertisement_display_order')) {
             $attributes['advertisement_display_order'] = (int) $this->input('advertisement_display_order');
         }
@@ -196,6 +263,14 @@ class UpdateAdvertisementRequest extends FormRequest
         if ($this->has('property_details')) {
             $details = $this->input('property_details');
             $attributes['property_details'] = is_array($details) ? $details : null;
+        }
+
+        if ($this->youtubeLinksWereSent()) {
+            $attributes['advertisement_youtube_video_links'] = $this->normalizedYoutubeLinks();
+        }
+
+        if ($this->locationLinksWereSent()) {
+            $attributes['advertisement_location_links'] = $this->normalizedLocationLinks();
         }
 
         return $attributes;
